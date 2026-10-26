@@ -34,11 +34,17 @@ export function demoSeed() {
   const dl = ymd(startOfWeek());
   const blocs = [];
   for (let dia = 1; dia <= 5; dia++) {
-    blocs.push({ id: uid(), persona: 'pau', dia, inici: '08:00', fi: '14:30', text: 'Institut' });
-    if (dia === 3) blocs.push({ id: uid(), persona: 'pau', dia, inici: '15:00', fi: '18:00', text: 'Tarda rotatòria', variable: true });
+    blocs.push({ id: uid(), persona: 'pau', dia, inici: dia === 1 || dia === 3 ? '10:00' : '08:00', fi: '14:30', text: 'Institut' });
+    if (dia === 1 || dia === 3) blocs.push({ id: uid(), persona: 'pau', dia, inici: '08:30', fi: '09:30', text: 'Porta els nens', nens: true, nomesEscola: true });
+    else blocs.push({ id: uid(), persona: 'laia', dia, inici: '08:30', fi: '09:30', text: 'Porta els nens', nens: true, nomesEscola: true });
     if (dia !== 5) blocs.push({ id: uid(), persona: 'laia', dia, inici: dia === 1 ? '10:30' : '09:00', fi: '16:30', text: 'Escola' });
     blocs.push({ id: uid(), persona: 'nil', dia, inici: '09:00', fi: '16:30', text: 'Escola' });
     blocs.push({ id: uid(), persona: 'jana', dia, inici: '09:00', fi: '16:00', text: 'Llar d\'infants' });
+  }
+  // tardes rotatòries d'en Pau: dies concrets (aquesta setmana i d'aquí a dues)
+  for (const n of [2, 18, 30]) {
+    const data = addDaysYmd(dl, n);
+    blocs.push({ id: uid(), persona: 'pau', data, dia: ((parseYmd(data).getDay() + 6) % 7) + 1, inici: '15:00', fi: '18:00', text: "Tarda a l'institut" });
   }
   return {
     'data/config.json': {

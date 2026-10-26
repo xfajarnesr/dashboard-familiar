@@ -73,6 +73,11 @@ export function WeatherIcon({ kind, size = 28, day = true }) {
   return html`<svg width=${size} height=${size} viewBox="0 0 24 24" aria-hidden="true">${body}</svg>`;
 }
 
+// Logo: la casa amb les quatre finestres de la família (el mateix que icons/icon.svg)
+export function Logo({ size = 48 }) {
+  return html`<svg class="logo" width=${size} height=${size} viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#1e2b3a"/><path d="M40 17.5h5v8.5h-5z" fill="#f4f2f8"/><path d="M32 13.5 51.5 30H47v19.5H17V30h-4.5z" fill="#f4f2f8" stroke="#f4f2f8" stroke-width="3" stroke-linejoin="round"/><circle cx="26.5" cy="35.5" r="4.3" fill="#2f6fdb"/><circle cx="37.5" cy="35.5" r="4.3" fill="#c2407a"/><circle cx="26.5" cy="45" r="4.3" fill="#2e9e6a"/><circle cx="37.5" cy="45" r="4.3" fill="#d99a0b"/></svg>`;
+}
+
 // ---------- Components ----------
 export function Sheet({ title, onClose, children, actions }) {
   const ref = useRef();

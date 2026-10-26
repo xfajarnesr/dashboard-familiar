@@ -552,3 +552,11 @@ input + input, .chips + input { margin-top: .4rem; }
 .rec-frase { border-left: 3px solid var(--c); padding-left: .7rem; }
 .avisos li.salut { background: color-mix(in srgb, #D93F5C 12%, var(--surface)); color: color-mix(in srgb, #D93F5C 70%, var(--ink)); font-weight: 700; }
 .avisos li.record { background: color-mix(in srgb, #E2A31B 14%, var(--surface)); color: color-mix(in srgb, #B07A08 60%, var(--ink)); }
+
+/* ---------- v4: horaris puntuals, portar els nens, logo ---------- */
+.blk.nens { background: color-mix(in srgb, var(--c) 40%, var(--surface)); box-shadow: inset 0 0 0 1.5px var(--c); }
+.oc-horari .oc-title { font-weight: 400; }
+.hor-dia.puntuals { margin-top: 1rem; padding-top: .8rem; border-top: 1px solid var(--line); }
+.hor-dia.puntuals .btn { margin-top: .3rem; }
+.logo { display: block; flex: none; }
+.setup-card .logo { margin-bottom: .6rem; }

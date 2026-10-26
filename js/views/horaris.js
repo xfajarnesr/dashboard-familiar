@@ -1,14 +1,26 @@
 import { html, useState } from '../vendor/preact-htm.js';
 import { ctx, Icon, Sheet, Field, Seg, useForm, Empty } from '../ui.js';
-import { hhmmToMin, uid, DIES } from '../util.js';
+import { hhmmToMin, uid, DIES, ymd, parseYmd, fmtCurt } from '../util.js';
 import { senseEscola } from '../calendar.js';
 
 export const DIA_NOMS = ['', 'Dilluns', 'Dimarts', 'Dimecres', 'Dijous', 'Divendres', 'Dissabte', 'Diumenge'];
 export const diaDe = (date) => { const g = date.getDay(); return g === 0 ? 7 : g; };
 
-export function blocsDe(persona, dia) {
-  return ctx.store.items('horaris').filter((b) => b.persona === persona && Number(b.dia) === dia)
+// Franges d'una persona per a un dia de la setmana. Si es passa la data (AAAA-MM-DD), també hi entren
+// les franges puntuals d'aquell dia (camp `data`, p. ex. les tardes rotatòries) i se n'eliminen les
+// marcades `nomesEscola` (portar els nens) quan cap dels nens té escola.
+export function blocsDe(persona, dia, ymdStr) {
+  const nens = ctx.membres.filter((m) => !m.adult);
+  const hiHaEscola = !ymdStr || !nens.length || nens.some((n) => !senseEscola(ymdStr, n.id));
+  return ctx.store.items('horaris').filter((b) => b.persona === persona
+      && (b.data ? b.data === ymdStr : Number(b.dia) === dia)
+      && (!b.nomesEscola || hiHaEscola))
     .sort((a, b) => a.inici.localeCompare(b.inici));
+}
+// Franges puntuals (amb data) d'una persona, de la més propera a la més llunyana
+export function puntualsDe(persona, desDe) {
+  return ctx.store.items('horaris').filter((b) => b.persona === persona && b.data && (!desDe || b.data >= desDe))
+    .sort((a, b) => a.data.localeCompare(b.data) || a.inici.localeCompare(b.inici));
 }
 
 // Agrupa blocs contigus (≤20 min de forat) per fer un resum llegible
@@ -16,8 +28,9 @@ export function franges(blocs) {
   const out = [];
   for (const b of blocs) {
     const last = out[out.length - 1];
-    if (last && !b.variable && !last.variable && hhmmToMin(b.inici) - hhmmToMin(last.fi) <= 30) { last.fi = b.fi; last.items.push(b); }
-    else out.push({ id: b.id, inici: b.inici, fi: b.fi, variable: b.variable, text: b.variable ? b.text : null, items: [b] });
+    const sol = (x) => x.variable || x.nens || x.data;
+    if (last && !sol(b) && !sol(last) && hhmmToMin(b.inici) - hhmmToMin(last.fi) <= 30) { last.fi = b.fi; last.items.push(b); }
+    else out.push({ id: b.id, inici: b.inici, fi: b.fi, variable: b.variable, nens: b.nens, puntual: !!b.data, text: sol(b) ? b.text : null, items: [b] });
   }
   return out;
 }
@@ -34,7 +47,7 @@ export function DayRibbon({ date, ymdStr, compact }) {
   const hores = [8, 10, 12, 14, 16, 18];
   const estat = (m) => {
     const ll = m.calendariEscolar !== false ? senseEscola(ymdStr, m.id) : null;
-    const tots = blocsDe(m.id, dia);
+    const tots = blocsDe(m.id, dia, ymdStr);
     const amaga = ll && !(ll === 'cap de setmana' && tots.length);
     return { ll: amaga ? ll : null, blocs: amaga ? [] : tots };
   };
@@ -49,7 +62,7 @@ export function DayRibbon({ date, ymdStr, compact }) {
         <div class="ribbon-track">
           ${hores.map((h) => html`<i class="tick" style=${{ left: `${((h * 60 - H0) / span) * 100}%` }}></i>`)}
           ${blocs.length === 0 && html`<span class="ribbon-free">${ll || 'Sense horari'}</span>`}
-          ${franges(blocs).map((b) => html`<button class=${'blk' + (b.variable ? ' var' : '') + (sel === b.id ? ' sel' : '')}
+          ${franges(blocs).map((b) => html`<button class=${'blk' + (b.variable ? ' var' : '') + (b.nens ? ' nens' : '') + (b.puntual ? ' puntual' : '') + (sel === b.id ? ' sel' : '')}
               style=${{ left: pct(b.inici), width: `calc(${pct(b.fi)} - ${pct(b.inici)})`, '--c': m.color }}
               title=${b.items.map((x) => `${x.inici}–${x.fi} ${x.text}`).join('\n')} aria-label=${`${m.nom} ${b.inici}–${b.fi}`} onClick=${() => setSel(sel === b.id ? null : b.id)}></button>`)}
           ${esAvui && nowMin > H0 && nowMin < H1 && html`<i class="now" style=${{ left: `${((nowMin - H0) / span) * 100}%` }}></i>`}
@@ -60,7 +73,7 @@ export function DayRibbon({ date, ymdStr, compact }) {
       const b0 = ctx.store.items('horaris').find((x) => x.id === sel);
       if (!b0) return null;
       const m = ctx.membres.find((x) => x.id === b0.persona);
-      const f = franges(blocsDe(b0.persona, dia)).find((x) => x.id === sel);
+      const f = franges(blocsDe(b0.persona, dia, ymdStr)).find((x) => x.id === sel);
       if (!f) return null;
       return html`<div class="ribbon-detail"><b style=${{ color: `color-mix(in srgb, ${m?.color} 75%, var(--ink))` }}>${m?.nom}</b>
         <ul>${f.items.map((b) => html`<li><span>${b.inici}–${b.fi}</span> ${b.text}${b.variable ? ' (variable)' : ''}</li>`)}</ul></div>`;
@@ -73,7 +86,7 @@ export function ResumHorari({ date, ymdStr }) {
   return html`<ul class="resum-horari">
     ${ctx.membres.map((m) => {
       const ll = m.calendariEscolar !== false ? senseEscola(ymdStr, m.id) : null;
-      const tots = blocsDe(m.id, dia);
+      const tots = blocsDe(m.id, dia, ymdStr);
       if (ll && !(ll === 'cap de setmana' && tots.length)) return html`<li><span class="dot" style=${{ background: m.color }}></span><b>${m.nom}</b> <span class="muted">${ll}</span></li>`;
       const f = franges(tots);
       return html`<li><span class="dot" style=${{ background: m.color }}></span><b>${m.nom}</b> <span>${f.length ? f.map((x) => `${x.inici}–${x.fi}${x.text ? ` (${x.text.toLowerCase()})` : ''}`).join(', ') : 'lliure'}</span></li>`;
@@ -89,7 +102,7 @@ export function HorarisView() {
   const [edit, setEdit] = useState(null);
   return html`<div>
     <${Seg} value=${dia} onChange=${setDia} options=${[1, 2, 3, 4, 5, 6, 7].map((d) => ({ value: d, label: ['', 'Dl', 'Dt', 'Dc', 'Dj', 'Dv', 'Ds', 'Dg'][d] }))} />
-    <p class="hint">Toca un bloc per veure'n el detall. Les franges ratllades són variables (tardes rotatòries, etc.).</p>
+    <p class="hint">Toca un bloc per veure'n el detall. Les franges ratllades són variables; les puntuals (com les tardes rotatòries) només surten el dia que toca i marquen el dia al calendari.</p>
     <${HorariSetmana} dia=${dia} />
     <div class="sec-head"><h3>Editar horaris</h3></div>
     <div class="chips">${ctx.membres.map((m) => html`<button class=${'chip' + (persona === m.id ? ' on' : '')} style=${{ '--c': m.color }} onClick=${() => setPersona(persona === m.id ? null : m.id)}><span class="dot" style=${{ background: m.color }}></span>${m.nom}</button>`)}</div>
@@ -109,6 +122,7 @@ function HorariSetmana({ dia }) {
 
 function EditorPersona({ persona, onEdit }) {
   const m = ctx.membres.find((x) => x.id === persona);
+  const punt = puntualsDe(persona, ymd());
   return html`<div class="card">
     ${[1, 2, 3, 4, 5, 6, 7].map((d) => {
       const bl = blocsDe(persona, d);
@@ -120,22 +134,34 @@ function EditorPersona({ persona, onEdit }) {
       </div>`;
     })}
     <button class="btn" onClick=${() => onEdit({ id: null, persona, dia: 1, inici: '09:00', fi: '10:00', text: '' })}><${Icon} n="plus" size=${16} /> Afegeix franja</button>
+    <div class="hor-dia puntuals">
+      <h4>Dies concrets</h4>
+      ${punt.length === 0 ? html`<p class="muted small">Cap franja puntual pendent.</p>` : punt.map((b) => html`<button class="hor-blk" style=${{ '--c': m.color }} onClick=${() => onEdit(b)}><span>${fmtCurt(b.data)} · ${b.inici}–${b.fi}</span> ${b.text}</button>`)}
+      <button class="btn" onClick=${() => onEdit({ id: null, persona, data: ymd(), inici: '15:00', fi: '18:00', text: '' })}><${Icon} n="plus" size=${16} /> Afegeix un dia concret</button>
+    </div>
   </div>`;
 }
 
 function BlocForm({ bloc, onClose }) {
-  const [f, set] = useForm({ ...bloc, dia: String(bloc.dia) });
+  const [f, set, setF] = useForm({ ...bloc, dia: String(bloc.dia || 1), data: bloc.data || '' });
+  const puntual = !!f.data;
   const save = () => {
     if (!f.inici || !f.fi) return;
-    ctx.store.upsert('horaris', { ...f, dia: Number(f.dia), id: f.id || uid() }, `horari de ${f.persona}`);
+    const item = { ...f, id: f.id || uid() };
+    if (puntual) { item.dia = diaDe(parseYmd(f.data)); } else { item.dia = Number(f.dia); item.data = null; }
+    ctx.store.upsert('horaris', item, `horari de ${f.persona}`);
     onClose();
   };
   const del = () => { ctx.store.remove('horaris', f.id, `treu franja d'horari`); onClose(); };
   return html`<${Sheet} title=${bloc.id ? 'Edita franja' : 'Nova franja'} onClose=${onClose}
     actions=${html`${bloc.id && html`<button class="btn ghost danger" onClick=${del}><${Icon} n="trash" size=${16} /> Esborra</button>`}<button class="btn primary" onClick=${save}>Desa</button>`}>
-    <${Field} label="Dia"><select value=${f.dia} onChange=${set('dia')}>${[1, 2, 3, 4, 5, 6, 7].map((d) => html`<option value=${d}>${DIA_NOMS[d]}</option>`)}</select><//>
+    <${Seg} small=${true} value=${puntual ? 'dia' : 'setmana'} onChange=${(v) => setF((x) => ({ ...x, data: v === 'dia' ? x.data || ymd() : '' }))} options=${[{ value: 'setmana', label: 'Cada setmana' }, { value: 'dia', label: 'Un dia concret' }]} />
+    ${puntual
+      ? html`<${Field} label="Dia" hint="Només surt aquest dia i el marca amb un punt al calendari."><input type="date" value=${f.data} onInput=${set('data')} /><//>`
+      : html`<${Field} label="Dia"><select value=${f.dia} onChange=${set('dia')}>${[1, 2, 3, 4, 5, 6, 7].map((d) => html`<option value=${d}>${DIA_NOMS[d]}</option>`)}</select><//>`}
     <div class="row2"><${Field} label="Inici"><input type="time" value=${f.inici} onInput=${set('inici')} /><//><${Field} label="Final"><input type="time" value=${f.fi} onInput=${set('fi')} /><//></div>
     <${Field} label="Què és"><input value=${f.text} onInput=${set('text')} placeholder="Classe, reunió, escola…" /><//>
-    <label class="check"><input type="checkbox" checked=${!!f.variable} onChange=${set('variable')} /> Franja variable (no cada setmana igual)</label>
+    ${!puntual && html`<label class="check"><input type="checkbox" checked=${!!f.variable} onChange=${set('variable')} /> Franja variable (no cada setmana igual)</label>`}
+    ${!puntual && html`<label class="check"><input type="checkbox" checked=${!!f.nomesEscola} onChange=${set('nomesEscola')} /> Només els dies que hi ha escola (portar o recollir els nens)</label>`}
   <//>`;
 }

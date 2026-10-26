@@ -17,7 +17,7 @@ export function AgendaView({ sub }) {
 }
 
 export function OcRow({ o, onEdit, showDate }) {
-  const editable = o.kind === 'event' || o.kind === 'escolar' || o.kind === 'aniv';
+  const editable = o.kind === 'event' || o.kind === 'escolar' || o.kind === 'aniv' || o.kind === 'horari';
   return html`<li class=${'oc oc-' + o.kind} style=${{ '--c': o.color }} onClick=${() => editable && onEdit && onEdit(o)}>
     <span class="oc-time">${showDate ? (daysBetween(ymd(), o.date) < 7 ? relatiu(o.date) : fmtCurt(o.date)) : o.time || (o.multi ? '' : 'Tot el dia')}${showDate && o.time ? ` ${o.time}` : ''}</span>
     <span class="oc-body"><span class="oc-title">${o.priv && html`<span class="priv" title=${o.priv === 'jo' ? 'Només ho veus tu' : "L'altre hi veu «ocupat»"}><${Icon} n="lock" size=${13} stroke=${2.2} /></span>`}${o.title}${o.anys > 0 && o.ref.mostraAnys ? ` (${o.anys})` : ''}</span>
@@ -71,7 +71,7 @@ function Calendari() {
   const delDia = m[sel] || [];
   const propers = ocurrencies(avui, addDaysYmd(avui, 30), { barca, femeni }).filter((o) => !(o.multi && !o.first));
   const nou = () => setEdit({ id: null, title: '', date: sel, end: '', time: '', timeEnd: '', qui: [], cat: 'familia', repeat: 'cap', notes: '', lloc: '' });
-  const obre = (o) => (o.kind === 'aniv' ? ctx.nav('mes/aniversaris') : setEdit(o.kind === 'escolar' ? { ...o.ref, _escolar: true } : o.ref));
+  const obre = (o) => (o.kind === 'aniv' ? ctx.nav('mes/aniversaris') : o.kind === 'horari' ? ctx.nav('agenda/horaris') : setEdit(o.kind === 'escolar' ? { ...o.ref, _escolar: true } : o.ref));
   return html`<div class="cal-wrap">
     <div class="cal">
       <div class="weeknav">
@@ -110,7 +110,7 @@ function Calendari() {
 function dinsHorari(date, time, timeEnd) {
   if (!date || !time || !ctx.me) return false;
   const t0 = hhmmToMin(time), t1 = hhmmToMin(timeEnd || time);
-  return blocsDe(ctx.me, diaDe(parseYmd(date))).some((b) => t0 >= hhmmToMin(b.inici) && t1 <= hhmmToMin(b.fi));
+  return blocsDe(ctx.me, diaDe(parseYmd(date)), date).some((b) => t0 >= hhmmToMin(b.inici) && t1 <= hhmmToMin(b.fi));
 }
 function visProposada(f) {
   if (f.cat !== 'feina') return 'tots';

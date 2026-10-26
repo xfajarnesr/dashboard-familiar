@@ -1,5 +1,5 @@
 import { html, render, useState, useEffect } from './vendor/preact-htm.js';
-import { ctx, Icon, SyncBadge, PersonPicker } from './ui.js';
+import { ctx, Icon, SyncBadge, PersonPicker, Logo } from './ui.js';
 import { Store, GitHubBackend, LocalBackend, AuthError } from './store.js';
 import { lsGet, lsSet } from './util.js';
 import { aplicaTema } from './tema.js';
@@ -56,7 +56,7 @@ function Setup({ onDone }) {
   const demo = () => { const c = { demo: true }; lsSet('df.conn', c); onDone(c); };
   return html`<main class="setup">
     <div class="setup-card">
-      <div class="logo-dots"><i></i><i></i><i></i><i></i></div>
+      <${Logo} size=${56} />
       <h1>Casa</h1>
       <p>El tauler de la família: horaris, menjars, compra, tasques i calendari, compartit entre els dos.</p>
       <form onSubmit=${connecta}>
@@ -132,7 +132,7 @@ function App() {
   const { view, sub } = route;
   return html`<div class="shell">
     <nav class="nav" aria-label="Seccions">
-      <div class="brand"><div class="logo-dots sm"><i></i><i></i><i></i><i></i></div><span>Casa</span></div>
+      <div class="brand"><${Logo} size=${30} /><span>Casa</span></div>
       ${NAV.map(([k, ic, label]) => html`<a href=${`#/${k}`} class=${(view === k ? 'on ' : '') + 'nav-' + k} aria-current=${view === k ? 'page' : null}><${Icon} n=${ic} size=${22} /><span>${label}</span></a>`)}
       <div class="nav-foot"><${SyncBadge} /></div>
     </nav>

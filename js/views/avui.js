@@ -115,7 +115,7 @@ export function AvuiView() {
   const kindDia = esAvui && cur ? descMeteo(cur.weather_code)[1] : iDia >= 0 ? descMeteo(daily.weather_code[iDia])[1] : 'sol';
 
   const agenda = html`<${Card} sec="agenda" icon="agenda" title=${`Agenda ${quin}`} link="Calendari" onLink=${() => ctx.nav('agenda')} cls=${ocsDia.length ? 'agenda-main' : ''}>
-    ${ocsDia.length ? html`<${OcList} ocs=${ocsDia} onEdit=${(x) => (x.kind === 'aniv' ? ctx.nav('mes/aniversaris') : x.kind === 'event' ? setNouEvent(x.ref) : ctx.nav('agenda/escolar'))} />` : html`<p class="muted small">Res a l'agenda ${quin}.</p>`}
+    ${ocsDia.length ? html`<${OcList} ocs=${ocsDia} onEdit=${(x) => (x.kind === 'aniv' ? ctx.nav('mes/aniversaris') : x.kind === 'event' ? setNouEvent(x.ref) : x.kind === 'horari' ? ctx.nav('agenda/horaris') : ctx.nav('agenda/escolar'))} />` : html`<p class="muted small">Res a l'agenda ${quin}.</p>`}
     <button class="btn sm soft" onClick=${() => setNouEvent({ id: null, title: '', date: dia, end: '', time: '', timeEnd: '', qui: [], cat: 'familia', repeat: 'cap', notes: '', lloc: '' })}><${Icon} n="plus" size=${15} /> Afegeix a ${quin}</button>
   <//>`;
 

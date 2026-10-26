@@ -92,6 +92,12 @@ export function ocurrencies(from, to, { barca = true, femeni = false, docs = tru
     }
   }
 
+  // Franges d'horari d'un dia concret (tardes rotatòries…): un punt al calendari i una línia a l'agenda del dia
+  for (const b of s.items('horaris')) {
+    if (!b.data) continue;
+    push({ date: b.data, time: b.inici, timeEnd: b.fi, title: b.text || 'Franja', kind: 'horari', color: colorDe(b.persona), qui: b.persona, ref: b });
+  }
+
   if (docs) {
     for (const d of s.items('documents')) {
       if (!d.caducitat) continue;

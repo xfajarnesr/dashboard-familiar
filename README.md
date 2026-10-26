@@ -56,6 +56,10 @@ No és xifrat: totes les dades són al mateix repo i tots dos hi teniu accés. S
 
 *Més → Frases i fites*: el que diuen i el que aprenen, amb l'edat que tenien (posa la data de naixement a *Ajustos → Família*). El mateix dia d'anys posteriors surt a *Avui* com a «Avui fa un any…».
 
+### Horaris puntuals i portar els nens
+
+A *Agenda → Horaris → Editar horaris*, cada persona té franges setmanals i **dies concrets**. Una franja d'un dia concret (com les tardes rotatòries) només surt aquell dia a la cinta d'*On és cadascú* i marca el dia amb un punt al calendari. Les franges setmanals es poden marcar *Només els dies que hi ha escola*: és el cas de portar els nens, que desapareix sola els festius, les vacances i els caps de setmana.
+
 ### Tema
 
 *Ajustos → Aparença*: automàtic (segueix el mòbil), clar o fosc. Es guarda en cada dispositiu.
