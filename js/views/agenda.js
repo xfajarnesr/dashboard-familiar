@@ -1,8 +1,8 @@
 import { html, useState } from '../vendor/preact-htm.js';
-import { ctx, Icon, Sheet, Field, Seg, PersonPicker, Who, Empty, useForm } from '../ui.js';
-import { ymd, parseYmd, addDaysYmd, startOfWeek, fmtLlarg, fmtCurt, daysBetween, MESOS_CAP, DIES_CURTS, uid, relatiu } from '../util.js';
+import { ctx, Icon, Sheet, Field, Seg, PersonPicker, Who, Empty, useForm, nomDe, colorDe } from '../ui.js';
+import { ymd, parseYmd, addDaysYmd, startOfWeek, fmtLlarg, fmtCurt, daysBetween, MESOS_CAP, DIES_CURTS, uid, relatiu, hhmmToMin } from '../util.js';
 import { ocurrencies, perDia, CATS, TIPUS_ESCOLAR } from '../calendar.js';
-import { HorarisView } from './horaris.js';
+import { HorarisView, blocsDe, diaDe } from './horaris.js';
 import { lsGet, lsSet } from '../util.js';
 
 export function AgendaView({ sub }) {
@@ -20,11 +20,38 @@ export function OcRow({ o, onEdit, showDate }) {
   const editable = o.kind === 'event' || o.kind === 'escolar' || o.kind === 'aniv';
   return html`<li class=${'oc oc-' + o.kind} style=${{ '--c': o.color }} onClick=${() => editable && onEdit && onEdit(o)}>
     <span class="oc-time">${showDate ? (daysBetween(ymd(), o.date) < 7 ? relatiu(o.date) : fmtCurt(o.date)) : o.time || (o.multi ? '' : 'Tot el dia')}${showDate && o.time ? ` ${o.time}` : ''}</span>
-    <span class="oc-body"><span class="oc-title">${o.title}${o.anys > 0 && o.ref.mostraAnys ? ` (${o.anys})` : ''}</span>
+    <span class="oc-body"><span class="oc-title">${o.priv && html`<span class="priv" title=${o.priv === 'jo' ? 'Només ho veus tu' : "L'altre hi veu «ocupat»"}><${Icon} n="lock" size=${13} stroke=${2.2} /></span>`}${o.title}${o.anys > 0 && o.ref.mostraAnys ? ` (${o.anys})` : ''}</span>
       ${(o.sub || o.lloc || (o.time && o.timeEnd)) && html`<small class="muted">${[o.time && o.timeEnd ? `fins a les ${o.timeEnd}` : '', o.lloc, o.sub].filter(Boolean).join(' · ')}</small>`}
     </span>
     ${o.qui && html`<${Who} id=${o.qui === 'tots' ? 'tots' : o.qui} small=${true} />`}
   </li>`;
+}
+
+// Llista d'ocurrències que plega la feina de l'altre adult (2 o més el mateix dia) en una sola línia.
+// Es pot desactivar a Ajustos (df.plegaFeina, per dispositiu).
+export function OcList({ ocs, onEdit, showDate }) {
+  const [obert, setObert] = useState({});
+  const plega = lsGet('df.plegaFeina', true);
+  const out = [];
+  const grups = {};
+  for (const o of ocs) {
+    const by = o.kind === 'event' && o.ref?.cat === 'feina' && o.ref.by && o.ref.by !== ctx.me ? o.ref.by : null;
+    if (!plega || !by) { out.push(o); continue; }
+    const k = `${o.date}|${by}`;
+    if (!grups[k]) { grups[k] = { fold: true, key: k, date: o.date, by, items: [] }; out.push(grups[k]); }
+    grups[k].items.push(o);
+  }
+  const row = (o) => html`<${OcRow} o=${o} onEdit=${onEdit} showDate=${showDate} />`;
+  return html`<ul class="ocs">${out.map((x) => {
+    if (!x.fold) return row(x);
+    if (x.items.length < 2) return x.items.map(row);
+    const open = obert[x.key];
+    return html`<li class="oc oc-fold" style=${{ '--c': colorDe(x.by) }} onClick=${() => setObert((s) => ({ ...s, [x.key]: !open }))} aria-expanded=${!!open}>
+        <span class="oc-time">${showDate ? (daysBetween(ymd(), x.date) < 7 ? relatiu(x.date) : fmtCurt(x.date)) : 'Feina'}</span>
+        <span class="oc-body"><span class="oc-title">${x.items.length} coses de feina de ${nomDe(x.by)}</span><small class="muted">${open ? 'Toca per plegar-les' : 'Toca per veure-les'}</small></span>
+        <span class="fold-arrow">${open ? '▴' : '▾'}</span>
+      </li>${open && x.items.map(row)}`;
+  })}</ul>`;
 }
 
 function Calendari() {
@@ -70,30 +97,59 @@ function Calendari() {
     </div>
     <div class="cal-side">
       <div class="sec-head"><h3>${fmtLlarg(sel)}</h3><button class="btn primary sm" onClick=${nou}><${Icon} n="plus" size=${16} /> Afegeix</button></div>
-      ${delDia.length === 0 ? html`<p class="muted">Res aquest dia.</p>` : html`<ul class="ocs">${delDia.map((o) => html`<${OcRow} o=${o} onEdit=${obre} />`)}</ul>`}
+      ${delDia.length === 0 ? html`<p class="muted">Res aquest dia.</p>` : html`<${OcList} ocs=${delDia} onEdit=${obre} />`}
       <div class="sec-head"><h3>Properes setmanes</h3></div>
-      ${propers.length === 0 ? html`<p class="muted">Res previst els propers 30 dies.</p>` : html`<ul class="ocs">${propers.slice(0, 25).map((o) => html`<${OcRow} o=${o} onEdit=${obre} showDate=${true} />`)}</ul>`}
+      ${propers.length === 0 ? html`<p class="muted">Res previst els propers 30 dies.</p>` : html`<${OcList} ocs=${propers.slice(0, 25)} onEdit=${obre} showDate=${true} />`}
     </div>
     ${edit && (edit._escolar ? html`<${EscolarForm} e=${edit} onClose=${() => setEdit(null)} />` : html`<${EventForm} e=${edit} onClose=${() => setEdit(null)} />`)}
   </div>`;
 }
 
+// Visibilitat proposada per a un esdeveniment nou: la feina sense hora (un examen, enviar correus)
+// només la veu qui la crea; amb hora dins del propi horari, també; fora de l'horari, l'altre hi veu «ocupat».
+function dinsHorari(date, time, timeEnd) {
+  if (!date || !time || !ctx.me) return false;
+  const t0 = hhmmToMin(time), t1 = hhmmToMin(timeEnd || time);
+  return blocsDe(ctx.me, diaDe(parseYmd(date))).some((b) => t0 >= hhmmToMin(b.inici) && t1 <= hhmmToMin(b.fi));
+}
+function visProposada(f) {
+  if (f.cat !== 'feina') return 'tots';
+  if (!f.time) return 'jo';
+  return dinsHorari(f.date, f.time, f.timeEnd) ? 'jo' : 'ocupat';
+}
+const VIS = { tots: 'Tothom', ocupat: 'Els altres: «ocupat»', jo: 'Només jo' };
+
 export function EventForm({ e, onClose }) {
-  const [f, set, setF] = useForm({ ...e, qui: Array.isArray(e.qui) ? e.qui : e.qui && e.qui !== 'tots' ? [e.qui] : [], end: e.end || '', time: e.time || '', timeEnd: e.timeEnd || '', notes: e.notes || '', lloc: e.lloc || '', repeat: e.repeat || 'cap' });
+  const [f, set, setF] = useForm({ ...e, qui: Array.isArray(e.qui) ? e.qui : e.qui && e.qui !== 'tots' ? [e.qui] : [], end: e.end || '', time: e.time || '', timeEnd: e.timeEnd || '', notes: e.notes || '', lloc: e.lloc || '', repeat: e.repeat || 'cap', vis: e.vis || 'tots' });
+  const [visTocat, setVisTocat] = useState(!!e.id);
+  const meu = !f.by || f.by === ctx.me;
+  // mentre no la triïs a mà, la visibilitat segueix el tipus, l'hora i el teu horari
+  const vis = meu ? (visTocat ? f.vis : visProposada(f)) : f.vis;
+  const visOk = vis === 'ocupat' && !f.time ? 'jo' : vis;
+  const altres = ctx.membres.filter((m) => m.adult && m.id !== ctx.me).map((m) => m.nom).join(' i ') || "L'altre";
   const save = () => {
     if (!f.title.trim() || !f.date) return;
-    const item = { ...f, title: f.title.trim(), id: f.id || uid(), end: f.end && f.end > f.date ? f.end : null, time: f.time || null, timeEnd: f.timeEnd || null, qui: f.qui.length ? f.qui : 'tots', by: f.by || ctx.me };
-    ctx.store.upsert('events', item, `${e.id ? 'edita' : 'afegeix'} ${item.title}`);
+    const qui = f.qui.length ? f.qui : visOk !== 'tots' && ctx.me ? [ctx.me] : 'tots';
+    const item = { ...f, title: f.title.trim(), id: f.id || uid(), end: f.end && f.end > f.date ? f.end : null, time: f.time || null, timeEnd: f.timeEnd || null, qui, by: f.by || ctx.me, vis: visOk };
+    ctx.store.upsert('events', item, visOk === 'tots' ? `${e.id ? 'edita' : 'afegeix'} ${item.title}` : `${e.id ? 'edita' : 'afegeix'} esdeveniment personal`);
     onClose();
   };
-  const del = () => { ctx.store.remove('events', f.id, `esborra ${f.title}`); onClose(); };
+  const del = () => { ctx.store.remove('events', f.id, f.vis && f.vis !== 'tots' ? 'esborra esdeveniment personal' : `esborra ${f.title}`); onClose(); };
+  const triaVis = (v) => { setVisTocat(true); setF((x) => ({ ...x, vis: v })); };
+  const hora = f.time ? `${f.time}${f.timeEnd ? `–${f.timeEnd}` : ''}` : '';
+  const visHint = visOk === 'tots' ? 'Tothom en veu el títol i els detalls.'
+    : visOk === 'jo' ? `Només surt al teu calendari. ${altres} no en veu res.`
+    : `${altres} hi veurà «${nomDe(ctx.me)} ocupat» ${hora}, sense el títol.`;
   return html`<${Sheet} title=${e.id ? 'Esdeveniment' : 'Nou esdeveniment'} onClose=${onClose}
     actions=${html`${e.id && html`<button class="btn ghost danger" onClick=${del}><${Icon} n="trash" size=${16} /> Esborra</button>`}<button class="btn primary" onClick=${save}>Desa</button>`}>
     <${Field} label="Què"><input value=${f.title} onInput=${set('title')} placeholder="Pediatra de l'Hèlia, sopar amb amics…" /><//>
     <div class="row2"><${Field} label="Dia"><input type="date" value=${f.date} onInput=${set('date')} /><//><${Field} label="Fins (opcional)"><input type="date" value=${f.end} onInput=${set('end')} /><//></div>
     <div class="row2"><${Field} label="Hora (opcional)"><input type="time" value=${f.time} onInput=${set('time')} /><//><${Field} label="Fins a"><input type="time" value=${f.timeEnd} onInput=${set('timeEnd')} /><//></div>
-    <${Field} label="Qui hi va" hint="Si no en marques cap, és de tota la família."><${PersonPicker} multi=${true} value=${f.qui} onChange=${(v) => setF((x) => ({ ...x, qui: v }))} /><//>
     <${Field} label="Tipus"><div class="chips">${Object.entries(CATS).map(([k, v]) => html`<button type="button" class=${'chip' + (f.cat === k ? ' on' : '')} style=${{ '--c': v.color }} onClick=${() => setF((x) => ({ ...x, cat: k }))}>${v.nom}</button>`)}</div><//>
+    ${meu && html`<${Field} label="Qui ho veu" hint=${visHint + (!f.time ? ' Sense hora no cal «ocupat»: o ho veu tothom o només tu.' : '')}>
+      <div class="chips">${Object.entries(VIS).filter(([k]) => k !== 'ocupat' || f.time).map(([k, v]) => html`<button type="button" class=${'chip' + (visOk === k ? ' on' : '')} onClick=${() => triaVis(k)}>${k !== 'tots' && html`<${Icon} n="lock" size=${13} />`}${v}</button>`)}</div><//>`}
+    ${!meu && f.vis && f.vis !== 'tots' && html`<p class="hint">Aquest esdeveniment és de ${nomDe(f.by)}.</p>`}
+    <${Field} label="Qui hi va" hint="Si no en marques cap, és de tota la família."><${PersonPicker} multi=${true} value=${f.qui} onChange=${(v) => setF((x) => ({ ...x, qui: v }))} /><//>
     <${Field} label="Es repeteix"><select value=${f.repeat} onChange=${set('repeat')}><option value="cap">No</option><option value="setmanal">Cada setmana</option><option value="anual">Cada any (aniversaris…)</option></select><//>
     ${f.repeat === 'anual' && html`<label class="check"><input type="checkbox" checked=${!!f.mostraAnys} onChange=${set('mostraAnys')} /> Mostra quants anys fa</label>`}
     <${Field} label="Lloc"><input value=${f.lloc} onInput=${set('lloc')} /><//>

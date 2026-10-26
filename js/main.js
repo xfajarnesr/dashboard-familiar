@@ -2,6 +2,7 @@ import { html, render, useState, useEffect } from './vendor/preact-htm.js';
 import { ctx, Icon, SyncBadge, PersonPicker } from './ui.js';
 import { Store, GitHubBackend, LocalBackend, AuthError } from './store.js';
 import { lsGet, lsSet } from './util.js';
+import { aplicaTema } from './tema.js';
 import { AvuiView } from './views/avui.js';
 import { AgendaView } from './views/agenda.js';
 import { MenjarView } from './views/menjar.js';
@@ -148,6 +149,7 @@ function App() {
   </div>`;
 }
 
+aplicaTema();
 render(html`<${App} />`, document.getElementById('app'));
 
 if ('serviceWorker' in navigator && location.protocol === 'https:') {

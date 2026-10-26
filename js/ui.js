@@ -42,6 +42,12 @@ const P = {
   clock: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3 2',
   spark: 'M12 3l1.8 5.4L19 10l-5.2 1.6L12 17l-1.8-5.4L5 10l5.2-1.6z',
   cake: 'M4 21h16M5 21v-7h14v7M5 17c2 1.3 4.7 1.3 7 0s5-1.3 7 0M12 14v-3M12 8a1.5 1.5 0 0 0 1-2.5L12 4l-1 1.5A1.5 1.5 0 0 0 12 8zM8 14v-2M16 14v-2',
+  heart: 'M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.5-7 10-7 10z',
+  quote: 'M5 11h4v4c0 2.5-1.3 4-3.5 4.5M5 11c0-3 1-5 4-6M14 11h4v4c0 2.5-1.3 4-3.5 4.5M14 11c0-3 1-5 4-6',
+  thermo: 'M10 14V5a2 2 0 0 1 4 0v9a4 4 0 1 1-4 0zM12 9v8',
+  pill: 'M10.5 20.5a5 5 0 0 1-7-7l6-6a5 5 0 0 1 7 7zM7 10l7 7',
+  ruler: 'M4 17L17 4l3 3L7 20zM8 13l2 2M11 10l2 2M14 7l2 2',
+  note: 'M6 3h9l4 4v14H6zM9 11h7M9 15h7M9 7h3',
   cloud: 'M7 18h10a4 4 0 0 0 .5-8A6 6 0 0 0 6 11a3.5 3.5 0 0 0 1 7z',
 };
 export function Icon({ n, size = 20, stroke = 1.8, cls = '' }) {
@@ -96,8 +102,8 @@ export function Seg({ value, options, onChange, small }) {
   </div>`;
 }
 
-export function PersonPicker({ value, onChange, multi = false, incloureTots = true, nomesAdults = false }) {
-  const opts = ctx.membres.filter((m) => !nomesAdults || m.adult);
+export function PersonPicker({ value, onChange, multi = false, incloureTots = true, nomesAdults = false, nomesNens = false }) {
+  const opts = ctx.membres.filter((m) => (!nomesAdults || m.adult) && (!nomesNens || !m.adult));
   const sel = multi ? value || [] : value;
   const toggle = (id) => {
     if (!multi) return onChange(id);

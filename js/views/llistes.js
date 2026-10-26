@@ -112,6 +112,9 @@ function seguent(d, r) {
   if (r === 'anual') x.setFullYear(x.getFullYear() + 1);
   return ymd(x);
 }
+// Una tasca amb vis 'jo' només la veu qui la té assignada (o qui l'ha creada). No és xifrat.
+export const tascaVisible = (t) => t.vis !== 'jo' || t.qui === ctx.me || t.by === ctx.me;
+
 export function completaTasca(t) {
   if (!t.fet && t.recur && t.recur !== 'cap') {
     const base = t.data || ymd();
@@ -127,7 +130,7 @@ export function TascaRow({ t, onEdit }) {
   const tard = t.data && t.data < avui && !t.fet;
   return html`<li class=${'item tasca' + (t.fet ? ' is-done' : '')}>
     <button class=${'tick-box' + (t.fet ? ' on' : '')} aria-label=${t.fet ? `Reobre ${t.text}` : `Fet: ${t.text}`} onClick=${() => completaTasca(t)}>${t.fet && html`<${Icon} n="check" size=${14} />`}</button>
-    <span class="item-txt" onClick=${() => onEdit && onEdit(t)}>${t.text}
+    <span class="item-txt" onClick=${() => onEdit && onEdit(t)}>${t.vis === 'jo' && html`<span class="priv" title="Només la veus tu"><${Icon} n="lock" size=${13} stroke=${2.2} /></span>`}${t.text}
       <small class=${tard ? 'late' : 'muted'}>${t.data ? ` · ${relatiu(t.data)}` : ''}${t.recur && t.recur !== 'cap' ? ' · ↻' : ''}</small></span>
     <${Who} id=${t.qui} small=${true} />
   </li>`;
@@ -136,10 +139,11 @@ export function TascaRow({ t, onEdit }) {
 function Tasques() {
   const [filtre, setFiltre] = useState('meves');
   const [txt, setTxt] = useState('');
+  const [privada, setPrivada] = useState(false);
   const [edit, setEdit] = useState(null);
   const avui = ymd();
   const fiSetmana = addDaysYmd(ymd(startOfWeek()), 6);
-  let ts = ctx.store.items('tasques');
+  let ts = ctx.store.items('tasques').filter(tascaVisible);
   if (filtre === 'meves') ts = ts.filter((t) => !t.fet && (t.qui === ctx.me || t.qui === 'tots' || !t.qui));
   else if (filtre === 'totes') ts = ts.filter((t) => !t.fet);
   else ts = ts.filter((t) => t.fet).sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || '')).slice(0, 50);
@@ -153,12 +157,13 @@ function Tasques() {
   const afegir = (e) => {
     e.preventDefault();
     if (!txt.trim()) return;
-    ctx.store.upsert('tasques', { id: uid(), text: txt.trim(), qui: ctx.me, fet: false, recur: 'cap', by: ctx.me }, `nova tasca: ${txt.trim()}`);
+    ctx.store.upsert('tasques', { id: uid(), text: txt.trim(), qui: ctx.me, fet: false, recur: 'cap', by: ctx.me, ...(privada ? { vis: 'jo' } : {}) }, privada ? 'nova tasca personal' : `nova tasca: ${txt.trim()}`);
     setTxt('');
   };
   return html`<div>
     <form class="addbar" onSubmit=${afegir}>
-      <input value=${txt} onInput=${(e) => setTxt(e.target.value)} placeholder="Nova tasca (per a tu; toca-la per canviar-ho)" aria-label="Nova tasca" />
+      <input value=${txt} onInput=${(e) => setTxt(e.target.value)} placeholder=${privada ? 'Tasca només per a tu…' : 'Nova tasca (per a tu; toca-la per canviar-ho)'} aria-label="Nova tasca" />
+      <button type="button" class=${'icon-btn lockbtn' + (privada ? ' on' : '')} aria-pressed=${privada} aria-label="Només la veig jo" title=${privada ? "Només la veuràs tu" : "La veurà tothom (toca per fer-la només teva)"} onClick=${() => setPrivada(!privada)}><${Icon} n=${privada ? 'lock' : 'unlock'} size=${18} /></button>
       <button class="btn primary" aria-label="Afegeix"><${Icon} n="plus" size=${18} /></button>
     </form>
     <${Seg} small=${true} value=${filtre} onChange=${setFiltre} options=${[{ value: 'meves', label: 'Meves' }, { value: 'totes', label: 'Totes' }, { value: 'fetes', label: 'Fetes' }]} />
@@ -174,7 +179,8 @@ export function TascaForm({ t, onClose }) {
   const [f, set, setF] = useForm({ ...t, data: t.data || '', notes: t.notes || '', recur: t.recur || 'cap' });
   const save = () => {
     if (!f.text.trim()) return;
-    ctx.store.upsert('tasques', { ...f, text: f.text.trim(), data: f.data || null, id: f.id || uid(), fet: !!f.fet, by: f.by || ctx.me }, `${t.id ? 'edita' : 'nova'} tasca: ${f.text.trim()}`);
+    const vis = f.vis === 'jo' && f.qui === ctx.me ? 'jo' : 'tots';
+    ctx.store.upsert('tasques', { ...f, vis, text: f.text.trim(), data: f.data || null, id: f.id || uid(), fet: !!f.fet, by: f.by || ctx.me }, vis === 'jo' ? `${t.id ? 'edita' : 'nova'} tasca personal` : `${t.id ? 'edita' : 'nova'} tasca: ${f.text.trim()}`);
     onClose();
   };
   const del = () => { ctx.store.remove('tasques', f.id, `esborra tasca: ${f.text}`); onClose(); };
@@ -183,6 +189,7 @@ export function TascaForm({ t, onClose }) {
     actions=${html`${t.id && html`<button class="btn ghost danger" onClick=${del}><${Icon} n="trash" size=${16} /> Esborra</button>`}<button class="btn primary" onClick=${save}>Desa</button>`}>
     <${Field} label="Què cal fer"><input value=${f.text} onInput=${set('text')} /><//>
     <${Field} label="Qui"><${PersonPicker} value=${f.qui} onChange=${(v) => setF((x) => ({ ...x, qui: v }))} /><//>
+    ${f.qui === ctx.me && html`<label class="check"><input type="checkbox" checked=${f.vis === 'jo'} onChange=${(e) => setF((x) => ({ ...x, vis: e.target.checked ? 'jo' : 'tots' }))} /> Només la veig jo (no surt a la llista de l'altre)</label>`}
     <${Field} label="Per quan">
       <div class="chips">
         ${[['Avui', avui], ['Demà', addDaysYmd(avui, 1)], ['Dissabte', addDaysYmd(ymd(startOfWeek()), 5)], ['Sense data', '']].map(([l, v]) => html`<button type="button" class=${'chip' + (f.data === v ? ' on' : '')} onClick=${() => setF((x) => ({ ...x, data: v }))}>${l}</button>`)}

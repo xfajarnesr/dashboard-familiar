@@ -1,5 +1,5 @@
 // Ajunta totes les fonts del calendari en una llista d'ocurrències per dia
-import { ctx, colorDe } from './ui.js';
+import { ctx, colorDe, nomDe } from './ui.js';
 import { parseYmd, ymd, addDaysYmd, daysBetween } from './util.js';
 import { ocurrenciaAny } from './aniversaris.js';
 
@@ -19,6 +19,16 @@ export const TIPUS_ESCOLAR = {
   curs: { nom: 'Curs', color: '#2F6FDB' },
 };
 
+// Què en veu aquest dispositiu? 'tot', 'ocupat' (només la franja) o null (gens).
+// vis: 'tots' (per defecte), 'ocupat' (els altres veuen la franja sense detall) o 'jo' (només qui l'ha creat).
+// No és xifrat: és per no fer soroll a l'altre.
+export function visEvent(e) {
+  const v = e.vis || 'tots';
+  if (v === 'tots' || !e.by || e.by === ctx.me) return 'tot';
+  if (v === 'ocupat' && e.time) return 'ocupat';
+  return null;
+}
+
 function eachDay(a, b, fn) {
   for (let d = a; d <= b; d = addDaysYmd(d, 1)) fn(d);
 }
@@ -29,8 +39,20 @@ export function ocurrencies(from, to, { barca = true, femeni = false, docs = tru
   const push = (o) => { if (o.date >= from && o.date <= to) out.push(o); };
 
   for (const e of s.items('events')) {
+    const vis = visEvent(e);
+    if (!vis) continue;
+    if (vis === 'ocupat') {
+      const base = { title: `${nomDe(e.by)} ocupat`, time: e.time, timeEnd: e.timeEnd, kind: 'ocupat', color: colorDe(e.by), qui: e.by, ref: null };
+      const len = e.end ? daysBetween(e.date, e.end) : 0;
+      if (e.repeat === 'setmanal') {
+        const dow = parseYmd(e.date).getDay();
+        eachDay(from > e.date ? from : e.date, e.until && e.until < to ? e.until : to, (d) => { if (parseYmd(d).getDay() === dow) push({ ...base, date: d }); });
+      } else if (len > 0) eachDay(e.date, e.end, (d) => push({ ...base, date: d, multi: true, first: d === e.date }));
+      else push({ ...base, date: e.date });
+      continue;
+    }
     const color = e.qui && e.qui !== 'tots' && !Array.isArray(e.qui) ? colorDe(e.qui) : Array.isArray(e.qui) && e.qui.length === 1 ? colorDe(e.qui[0]) : CATS[e.cat]?.color || CATS.altres.color;
-    const base = { title: e.title, time: e.time, timeEnd: e.timeEnd, kind: 'event', color, qui: e.qui, ref: e, notes: e.notes, lloc: e.lloc };
+    const base = { title: e.title, time: e.time, timeEnd: e.timeEnd, kind: 'event', color, qui: e.qui, ref: e, notes: e.notes, lloc: e.lloc, priv: e.vis && e.vis !== 'tots' ? e.vis : null };
     const len = e.end ? daysBetween(e.date, e.end) : 0;
     if (e.repeat === 'anual') {
       const d0 = parseYmd(e.date);

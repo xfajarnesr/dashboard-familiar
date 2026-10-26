@@ -5,10 +5,12 @@ import { getMeteo, descMeteo } from '../meteo.js';
 import { DayRibbon, ResumHorari } from './horaris.js';
 import { DinarNens, SoparLine, menuDia } from './menjar.js';
 import { ocurrencies, senseEscola } from '../calendar.js';
-import { OcRow, EventForm } from './agenda.js';
-import { TascaRow, categoritza, colorBotiga } from './llistes.js';
+import { OcList, EventForm } from './agenda.js';
+import { TascaRow, categoritza, colorBotiga, tascaVisible } from './llistes.js';
 import { estatDoc, partitsBarca, Partit } from './mes.js';
 import { propers } from '../aniversaris.js';
+import { avisosSalut } from './salut.js';
+import { recordsAvui } from './records.js';
 
 function useMeteo() {
   const cfg = ctx.store.get('config');
@@ -64,13 +66,13 @@ export function AvuiView() {
   const ocsDia = ocsSetmana.filter((o) => o.date === dia && !(o.kind === 'escolar' && o.multi && !o.first && o.date !== dia));
   const comptar = (d) => ocsSetmana.filter((o) => o.date === d && (o.kind === 'event' || o.kind === 'aniv')).length;
 
-  const totes = ctx.store.items('tasques').filter((t) => !t.fet && t.data);
+  const totes = ctx.store.items('tasques').filter((t) => !t.fet && t.data && tascaVisible(t));
   const tasques = (esAvui ? totes.filter((t) => t.data <= dia) : totes.filter((t) => t.data === dia)).sort((a, b) => a.data.localeCompare(b.data));
-  const meves = ctx.store.items('tasques').filter((t) => !t.fet && (t.qui === ctx.me || t.qui === 'tots')).length;
+  const meves = ctx.store.items('tasques').filter((t) => !t.fet && tascaVisible(t) && (t.qui === ctx.me || t.qui === 'tots')).length;
   const compra = ctx.store.items('compra').filter((i) => !i.fet);
 
   // Avisos
-  const avisos = [];
+  const avisos = [...avisosSalut()];
   for (const x of propers(7)) {
     avisos.push({ cls: 'aniv', txt: `Aniversari de ${x.a.nom} ${x.falten === 0 ? 'avui' : x.falten === 1 ? 'demà' : relatiu(x.date)}${x.edat ? ` (${x.edat})` : ''}`, go: 'mes/aniversaris' });
   }
@@ -89,6 +91,7 @@ export function AvuiView() {
   for (const x of proxLliure.slice(0, 2)) avisos.push({ cls: 'info', txt: `Sense escola ${relatiu(x.d)}: ${x.s}`, go: 'agenda/escolar' });
   const seg = monthKey(new Date(ara.getFullYear(), ara.getMonth() + 1, 1));
   if (ara.getDate() >= 24 && !ctx.store.menuMonths.includes(seg)) avisos.push({ cls: 'info', txt: `Falta el menú de ${MESOS[Number(seg.slice(5)) - 1]} de les escoles. Passa els PDF a Claude.`, go: 'menjar/escola' });
+  avisos.push(...recordsAvui());
   const plaDia = ctx.store.items('pla').find((p) => p.id === dia);
 
   const proper = partitsBarca().find((p) => p.data >= new Date(Date.now() - 2 * 3600e3).toISOString() && (p.equip || 'masculi') === 'masculi');
@@ -112,7 +115,7 @@ export function AvuiView() {
   const kindDia = esAvui && cur ? descMeteo(cur.weather_code)[1] : iDia >= 0 ? descMeteo(daily.weather_code[iDia])[1] : 'sol';
 
   const agenda = html`<${Card} sec="agenda" icon="agenda" title=${`Agenda ${quin}`} link="Calendari" onLink=${() => ctx.nav('agenda')} cls=${ocsDia.length ? 'agenda-main' : ''}>
-    ${ocsDia.length ? html`<ul class="ocs">${ocsDia.map((o) => html`<${OcRow} o=${o} onEdit=${(x) => (x.kind === 'aniv' ? ctx.nav('mes/aniversaris') : x.kind === 'event' ? setNouEvent(x.ref) : ctx.nav('agenda/escolar'))} />`)}</ul>` : html`<p class="muted small">Res a l'agenda ${quin}.</p>`}
+    ${ocsDia.length ? html`<${OcList} ocs=${ocsDia} onEdit=${(x) => (x.kind === 'aniv' ? ctx.nav('mes/aniversaris') : x.kind === 'event' ? setNouEvent(x.ref) : ctx.nav('agenda/escolar'))} />` : html`<p class="muted small">Res a l'agenda ${quin}.</p>`}
     <button class="btn sm soft" onClick=${() => setNouEvent({ id: null, title: '', date: dia, end: '', time: '', timeEnd: '', qui: [], cat: 'familia', repeat: 'cap', notes: '', lloc: '' })}><${Icon} n="plus" size=${15} /> Afegeix a ${quin}</button>
   <//>`;
 

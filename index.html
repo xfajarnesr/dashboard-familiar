@@ -6,8 +6,8 @@
 <title>Casa</title>
 <meta name="description" content="Tauler familiar: horaris, menjars, compra, tasques i calendari.">
 <meta name="robots" content="noindex">
-<meta name="theme-color" content="#f3f5f8" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#11171e" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f4f2f8">
+<script>/* tema abans de pintar (el mateix que fa js/tema.js) */(function(){var t='auto';try{t=JSON.parse(localStorage.getItem('df.tema'))||'auto'}catch(e){}var d=t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.dataset.theme=d?'dark':'light';document.querySelector('meta[name=theme-color]').content=d?'#11171e':'#f4f2f8'})()</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Casa">
 <link rel="manifest" href="manifest.webmanifest">
@@ -16,11 +16,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,600..800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/app.css?v=2">
+<link rel="stylesheet" href="css/app.css?v=3">
 </head>
 <body>
 <div id="app"><main class="loading">Carregant…</main></div>
 <noscript>Cal JavaScript per fer servir aquesta app.</noscript>
-<script type="module" src="js/main.js?v=2"></script>
+<script type="module" src="js/main.js?v=3"></script>
 </body>
 </html>

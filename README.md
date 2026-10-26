@@ -38,7 +38,27 @@ Si el perdeu o el voleu canviar: *Més → Ajustos → Desconnecta* i torneu a e
 - **Agenda:** calendari mensual amb els vostres esdeveniments, el calendari escolar, els partits del Barça i les caducitats; horaris setmanals editables; calendari escolar 2026-27.
 - **Menjar:** proposta de sopars per a la setmana, menú de l'escola i el catàleg de plats que feu a casa.
 - **Llistes:** compra agrupada per botigues (Mercat, Mercadona, Caprabo, Altres; es canvien a *Ajustos*), tasques amb responsable, data i repetició, i coses per casa.
-- **Més:** aniversaris, idees de regals (es poden amagar a l'altre), documents amb avís a 90, 30 i 7 dies, Barça i ajustos.
+- **Més:** aniversaris, salut dels nens, frases i fites, idees de regals (es poden amagar a l'altre), documents amb avís a 90, 30 i 7 dies, Barça i ajustos (família, aparença, botigues, connexió).
+
+### Què veu cadascú (agenda i tasques)
+
+No és xifrat: totes les dades són al mateix repo i tots dos hi teniu accés. Serveix perquè les coses d'un no facin soroll a l'altre.
+
+- Cada esdeveniment té **Qui ho veu**: *Tothom*, *Només jo* o, si té hora, *Els altres: «ocupat»* (l'altre veu «Xavi ocupat 17:00–19:30» sense el títol). Per a la feina, l'app ho proposa sola: sense hora (un examen, enviar correus), *Només jo*; amb hora dins del teu horari, també; fora de l'horari, *ocupat*. Sempre ho pots canviar.
+- Les coses de feina de l'altre (dues o més el mateix dia) surten plegades en una línia. Es desactiva a *Ajustos*.
+- Una tasca assignada a tu es pot marcar *Només la veig jo* (o amb el cadenat de la barra per afegir-ne).
+
+### Salut dels nens
+
+*Més → Salut dels nens*, amb tres pestanyes per a cada nen: **Registre** (temperatura, medicació donada, símptomes, visites, vacunes, amb qui ho ha apuntat), **Pes i talles** (amb gràfica) i **Medicaments**. A cada medicament hi apunteu la dosi que us ha indicat el pediatre o el prospecte, cada quantes hores i el màxim de preses en 24 h. L'app no calcula dosis: recorda la vostra, diu quan es va donar l'última i quan toca la següent, i avisa si el pes ha canviat molt des que la vau apuntar. El que s'apunta les darreres 24 h surt als avisos d'*Avui*.
+
+### Frases i fites
+
+*Més → Frases i fites*: el que diuen i el que aprenen, amb l'edat que tenien (posa la data de naixement a *Ajustos → Família*). El mateix dia d'anys posteriors surt a *Avui* com a «Avui fa un any…».
+
+### Tema
+
+*Ajustos → Aparença*: automàtic (segueix el mòbil), clar o fosc. Es guarda en cada dispositiu.
 
 ### Com es proposen els sopars
 

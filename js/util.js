@@ -111,3 +111,21 @@ export function lsSet(k, v) {
     else localStorage.setItem(k, JSON.stringify(v));
   } catch {}
 }
+
+// Edat llegible a una data: "3 setmanes", "11 mesos", "2 anys i 5 mesos"
+export function edat(naixement, a = ymd()) {
+  if (!naixement) return '';
+  const n = parseYmd(naixement), d = parseYmd(a);
+  if (d < n) return '';
+  let mesos = (d.getFullYear() - n.getFullYear()) * 12 + d.getMonth() - n.getMonth();
+  if (d.getDate() < n.getDate()) mesos--;
+  if (mesos < 1) { const s = Math.floor(daysBetween(n, d) / 7); return s <= 1 ? (daysBetween(n, d) <= 1 ? 'acabat de néixer' : `${daysBetween(n, d)} dies`) : `${s} setmanes`; }
+  if (mesos < 24) return `${mesos} ${mesos === 1 ? 'mes' : 'mesos'}`;
+  const anys = Math.floor(mesos / 12), m = mesos % 12;
+  return `${anys} anys${m ? ` i ${m} ${m === 1 ? 'mes' : 'mesos'}` : ''}`;
+}
+// "2026-10-26T03:15" en hora local
+export function ara() {
+  const d = new Date();
+  return `${ymd(d)}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}

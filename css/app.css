@@ -30,31 +30,30 @@
   --sec: var(--ink);
   color-scheme: light;
 }
-@media (prefers-color-scheme: dark) {
-  :root {
-    --paper: #11171e;
-    --surface: #19212b;
-    --ink: #e7ecf2;
-    --ink-2: #c3ccd7;
-    --muted: #96a2b2;
-    --line: #2a3541;
-    --soft: #222c37;
-    --primary: #e7ecf2;
-    --on-primary: #11171e;
-    --danger: #ef7a66;
-    --warn: #e5b04a;
-    --ok: #5cc28d;
-    --c-agenda: #6B9BFF;
-    --c-menjar: #F06A95;
-    --c-tasques: #8E8EF5;
-    --c-compra: #3CC2CE;
-    --c-horari: #6CC08F;
-    --c-avisos: #F07D66;
-    --c-barca: #E0508A;
-    --c-mes: #B08CF0;
-    --c-llistes: #3CC2CE;
-    color-scheme: dark;
-  }
+/* Tema fosc: el posa js/tema.js (i l'script de index.html abans de pintar) */
+:root[data-theme="dark"] {
+  --paper: #11171e;
+  --surface: #19212b;
+  --ink: #e7ecf2;
+  --ink-2: #c3ccd7;
+  --muted: #96a2b2;
+  --line: #2a3541;
+  --soft: #222c37;
+  --primary: #e7ecf2;
+  --on-primary: #11171e;
+  --danger: #ef7a66;
+  --warn: #e5b04a;
+  --ok: #5cc28d;
+  --c-agenda: #6B9BFF;
+  --c-menjar: #F06A95;
+  --c-tasques: #8E8EF5;
+  --c-compra: #3CC2CE;
+  --c-horari: #6CC08F;
+  --c-avisos: #F07D66;
+  --c-barca: #E0508A;
+  --c-mes: #B08CF0;
+  --c-llistes: #3CC2CE;
+  color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -333,7 +332,7 @@ input + input, .chips + input { margin-top: .4rem; }
 .m-when small { color: var(--muted); font-size: .8rem; }
 .m-teams { font-weight: 700; }
 .m-teams .fcb { color: #a50044; }
-@media (prefers-color-scheme: dark) { .m-teams .fcb { color: #f06a9a; } }
+[data-theme="dark"] .m-teams .fcb { color: #f06a9a; }
 .m-score { margin: 0 .4rem; font-family: var(--display); }
 .m-comp { color: var(--muted); font-size: .8rem; }
 .doc-st { font-size: .82rem; font-weight: 700; color: var(--muted); text-align: right; }
@@ -448,7 +447,7 @@ input + input, .chips + input { margin-top: .4rem; }
 .dc-dots i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: .85; }
 .dchip.on .dc-dots i { background: var(--c-agenda); opacity: 1; }
 @media (max-width: 420px) { .dc-w { font-size: .66rem; } .daystrip { gap: .25rem; } .hero { padding: 1rem .7rem .8rem; } }
-@media (prefers-color-scheme: dark) { .hero { filter: saturate(.9) brightness(.9); } }
+[data-theme="dark"] .hero { filter: saturate(.9) brightness(.9); }
 
 /* Compra per botigues */
 .botigues { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: .75rem; }
@@ -471,7 +470,7 @@ input + input, .chips + input { margin-top: .4rem; }
 .aniv-date { display: flex; flex-direction: column; align-items: center; width: 3rem; flex: none; border-radius: 10px; background: color-mix(in srgb, #E0457B 13%, var(--surface)); color: #B02A5E; padding: .25rem 0; line-height: 1.1; }
 .aniv-date b { font-family: var(--display); font-size: 1.3rem; }
 .aniv-date small { font-size: .72rem; font-weight: 700; }
-@media (prefers-color-scheme: dark) { .aniv-date { color: #F28AB0; } }
+[data-theme="dark"] .aniv-date { color: #F28AB0; }
 .aniv-body { flex: 1; display: flex; flex-direction: column; }
 .tag.hot { background: #E0457B; color: #fff; }
 .row3 { display: grid; grid-template-columns: 1fr 1.6fr 1.3fr; gap: .6rem; }
@@ -481,7 +480,6 @@ input + input, .chips + input { margin-top: .4rem; }
 /* Fitxes de Més amb color */
 .tile { --t: var(--c-mes); border-color: color-mix(in srgb, var(--t) 25%, var(--line)); }
 .tile .ico { color: #fff; background: var(--t); border-radius: 12px; padding: 8px; width: 44px; height: 44px; }
-.tile:nth-child(1) { --t: #E0457B; } .tile:nth-child(2) { --t: #F07F1E; } .tile:nth-child(3) { --t: #D6452F; } .tile:nth-child(4) { --t: #A50044; } .tile:nth-child(5) { --t: #5B6B80; }
 
 /* Menjar: targetes de dia amb el color de la secció */
 .day.today { border-color: var(--c-menjar); box-shadow: 0 0 0 1px var(--c-menjar); }
@@ -489,3 +487,68 @@ input + input, .chips + input { margin-top: .4rem; }
 .propose .btn.primary { background: var(--c-menjar); border-color: var(--c-menjar); }
 .cal-day.today .n { background: var(--c-agenda); color: #fff; }
 .cal-day.sel { box-shadow: inset 0 0 0 2px var(--c-agenda); }
+
+/* ---------- v3: visibilitat a l'agenda i tasques ---------- */
+.priv { display: inline-flex; vertical-align: -1px; margin-right: .3rem; color: var(--muted); }
+.oc-ocupat { cursor: default; background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--c) 9%, transparent) 0 6px, transparent 6px 12px); }
+.oc-ocupat .oc-title { font-weight: 400; color: var(--ink-2); }
+.oc-fold { align-items: center; background: color-mix(in srgb, var(--c) 4%, transparent); border-left-style: dashed; }
+.oc-fold .oc-title { font-weight: 400; }
+.oc-fold small { font-size: .78rem; }
+.fold-arrow { color: var(--muted); padding: 0 .5rem; }
+.lockbtn { flex: none; width: 46px; height: auto; border-radius: var(--r); border: 1.5px solid var(--line); background: var(--surface); color: var(--muted); }
+.lockbtn.on { color: var(--ink); border-color: var(--ink-2); background: var(--soft); }
+
+/* ---------- v3: salut dels nens ---------- */
+.sec-salut { --sec: #D93F5C; }
+.sec-records { --sec: #C98A0E; }
+[data-theme="dark"] .sec-salut { --sec: #F0738D; }
+[data-theme="dark"] .sec-records { --sec: #EDB847; }
+.nens { display: flex; gap: .5rem; margin-bottom: .8rem; }
+.nen { --c: var(--muted); flex: 1; display: flex; flex-direction: column; align-items: flex-start; gap: .1rem; text-align: left; border: 2px solid color-mix(in srgb, var(--c) 35%, var(--line)); background: var(--surface); border-radius: var(--r); padding: .55rem .8rem; cursor: pointer; }
+.nen b { font-family: var(--display); font-size: 1.1rem; color: color-mix(in srgb, var(--c) 75%, var(--ink)); }
+.nen small { color: var(--muted); font-size: .8rem; min-height: 1em; }
+.nen.on { border-color: var(--c); background: color-mix(in srgb, var(--c) 12%, var(--surface)); }
+.salut-btns { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; margin-bottom: 1rem; }
+.sbtn { display: flex; flex-direction: column; align-items: center; gap: .3rem; padding: .8rem .3rem; border: 1.5px solid color-mix(in srgb, var(--sec) 30%, var(--line)); border-radius: var(--r); background: color-mix(in srgb, var(--sec) 7%, var(--surface)); color: color-mix(in srgb, var(--sec) 80%, var(--ink)); font-weight: 700; font-size: .9rem; cursor: pointer; }
+.salut-estat p { margin: 0 0 .35rem; display: flex; flex-wrap: wrap; align-items: center; gap: .3rem; }
+.salut-estat .ico { color: var(--sec); }
+.med-estat { padding-top: .45rem; margin-top: .3rem; border-top: 1px solid var(--line); }
+.med-estat:first-child { border-top: 0; margin-top: 0; padding-top: 0; }
+.warn-txt { color: var(--warn); font-weight: 700; }
+.ok-txt { color: var(--ok); }
+.reg { gap: .55rem; cursor: pointer; }
+.reg .ico { color: var(--sec); }
+.reg-h { flex: none; min-width: 3rem; font-weight: 700; font-size: .85rem; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.reg-temp .item-txt { font-weight: 700; }
+.creix-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem 1rem; margin-bottom: .9rem; }
+.creix-v { display: flex; flex-direction: column; }
+.creix-v small { font-size: .78rem; color: var(--muted); }
+.creix-v b { font-family: var(--display); font-size: 1.35rem; }
+@media (min-width: 640px) { .creix-grid { grid-template-columns: repeat(4, 1fr); } }
+.grafic { width: 100%; height: auto; display: block; }
+@media (min-width: 900px) { .grafics { display: grid; grid-template-columns: 1fr 1fr; gap: 0 1rem; } }
+.g-axis { stroke: var(--line); stroke-width: 1.5; }
+.g-grid { stroke: var(--line); stroke-dasharray: 3 4; }
+.g-lbl { fill: var(--muted); font-size: 10px; font-family: var(--font); }
+.g-line { fill: none; stroke: var(--c); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+.g-dot { fill: var(--surface); stroke: var(--c); stroke-width: 2; }
+.meds { list-style: none; margin: 1rem 0 0; padding: 0; display: grid; gap: .6rem; }
+.med { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--sec); border-radius: var(--r); padding: .7rem .9rem; cursor: pointer; }
+.med p { margin: .15rem 0 0; }
+.med.inactiu { opacity: .6; border-left-color: var(--line); }
+.med-top { display: flex; justify-content: space-between; align-items: center; gap: .5rem; }
+.med-top b { font-size: 1.05rem; }
+
+/* ---------- v3: frases i fites ---------- */
+.sec-records .btnrow { margin-bottom: .9rem; }
+.rgroup h3 { margin: 1.1rem 0 .5rem; color: color-mix(in srgb, var(--sec) 70%, var(--ink)); }
+.records { list-style: none; margin: 0; padding: 0; display: grid; gap: .6rem; }
+.rec { --c: var(--sec); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: .8rem 1rem; cursor: pointer; position: relative; }
+.rec-frase { font-family: var(--display); font-size: 1.15rem; line-height: 1.3; margin-bottom: .4rem; }
+.rec-fita { font-weight: 700; display: flex; gap: .4rem; align-items: flex-start; margin-bottom: .4rem; }
+.rec-fita .ico { color: var(--sec); margin-top: .2rem; }
+.rec-peu { margin: 0; font-size: .82rem; color: var(--muted); display: flex; align-items: center; gap: .35rem; }
+.rec-frase { border-left: 3px solid var(--c); padding-left: .7rem; }
+.avisos li.salut { background: color-mix(in srgb, #D93F5C 12%, var(--surface)); color: color-mix(in srgb, #D93F5C 70%, var(--ink)); font-weight: 700; }
+.avisos li.record { background: color-mix(in srgb, #E2A31B 14%, var(--surface)); color: color-mix(in srgb, #B07A08 60%, var(--ink)); }

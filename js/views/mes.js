@@ -3,6 +3,9 @@ import { ctx, Icon, Sheet, Field, Seg, PersonPicker, Who, Empty, useForm, nomDe,
 import { ymd, parseYmd, fmtData, fmtLlarg, daysBetween, uid, relatiu, lsGet, lsSet, MESOS, deMes } from '../util.js';
 import { proper, propers } from '../aniversaris.js';
 import { botigues, BOTIGUES_DEF, colorBotiga } from './llistes.js';
+import { SalutView, registres } from './salut.js';
+import { RecordsView } from './records.js';
+import { tema, setTema } from '../tema.js';
 
 export function MesView({ sub, onLogout }) {
   if (sub === 'regals') return html`<${Regals} />`;
@@ -10,19 +13,25 @@ export function MesView({ sub, onLogout }) {
   if (sub === 'documents') return html`<${Documents} />`;
   if (sub === 'barca') return html`<${Barca} />`;
   if (sub === 'ajustos') return html`<${Ajustos} onLogout=${onLogout} />`;
+  if (sub === 'salut') return html`<${SalutView} Back=${Back} />`;
+  if (sub === 'records') return html`<${RecordsView} Back=${Back} />`;
   const docsAvis = ctx.store.items('documents').filter((d) => d.caducitat && daysBetween(ymd(), d.caducitat) <= 90).length;
   const regals = ctx.store.items('regals').filter((r) => r.estat !== 'donat' && visible(r)).length;
   const pa = propers(30);
+  const ultReg = registres().find((r) => r.tipus === 'temp' || r.tipus === 'med');
+  const nRecords = ctx.store.items('records').length;
   const tiles = [
-    ['aniversaris', 'cake', 'Aniversaris', pa.length ? `${pa[0].a.nom} ${pa[0].falten === 0 ? 'avui' : pa[0].falten === 1 ? 'demà' : `d'aquí a ${pa[0].falten} dies`}` : 'Els que no es poden oblidar'],
-    ['regals', 'gift', 'Idees de regals', regals ? `${regals} idees obertes` : 'Apunta-les quan surtin'],
-    ['documents', 'doc', 'Documents', docsAvis ? `${docsAvis} caduquen aviat` : 'Dates de caducitat'],
-    ['barca', 'ball', 'Barça', 'Calendari i resultats'],
-    ['ajustos', 'gear', 'Ajustos', 'Família, connexió, còpia'],
+    ['aniversaris', 'cake', 'Aniversaris', pa.length ? `${pa[0].a.nom} ${pa[0].falten === 0 ? 'avui' : pa[0].falten === 1 ? 'demà' : `d'aquí a ${pa[0].falten} dies`}` : 'Els que no es poden oblidar', '#E0457B'],
+    ['salut', 'heart', 'Salut dels nens', ultReg && Date.now() - new Date(ultReg.ts).getTime() < 48 * 3600e3 ? `Darrer registre: ${nomDe(ultReg.nen)}` : 'Febre, medicació, pes i talles', '#D93F5C'],
+    ['records', 'quote', 'Frases i fites', nRecords ? `${nRecords} apuntades` : 'El que diuen i el que aprenen', '#E2A31B'],
+    ['regals', 'gift', 'Idees de regals', regals ? `${regals} idees obertes` : 'Apunta-les quan surtin', '#F07F1E'],
+    ['documents', 'doc', 'Documents', docsAvis ? `${docsAvis} caduquen aviat` : 'Dates de caducitat', '#C8412C'],
+    ['barca', 'ball', 'Barça', 'Calendari i resultats', '#A50044'],
+    ['ajustos', 'gear', 'Ajustos', 'Família, aparença, connexió', '#5B6B80'],
   ];
   return html`<section class="view sec-mes">
     <header class="view-head"><h1>Més</h1></header>
-    <div class="tiles">${tiles.map(([k, ic, t, s]) => html`<button class="tile" onClick=${() => ctx.nav(`mes/${k}`)}><${Icon} n=${ic} size=${26} /><span><b>${t}</b><small>${s}</small></span></button>`)}</div>
+    <div class="tiles">${tiles.map(([k, ic, t, s, c]) => html`<button class="tile" style=${{ '--t': c }} onClick=${() => ctx.nav(`mes/${k}`)}><${Icon} n=${ic} size=${26} /><span><b>${t}</b><small>${s}</small></span></button>`)}</div>
   </section>`;
 }
 
@@ -228,8 +237,9 @@ function Ajustos({ onLogout }) {
     <div class="card">
       <h3>Qui ets en aquest dispositiu</h3>
       <${PersonPicker} incloureTots=${false} nomesAdults=${true} value=${ctx.me} onChange=${(v) => { lsSet('df.me', v); location.reload(); }} />
-      <p class="hint">Serveix per al filtre «Meves» de les tasques i per signar els canvis.</p>
+      <p class="hint">Serveix per al filtre «Meves» de les tasques, per saber què és teu a l'agenda i per signar els canvis.</p>
     </div>
+    <${Aparenca} />
     <div class="card">
       <h3>Família</h3>
       <ul class="items">${(cfg.membres || []).map((m) => html`<li class="item" onClick=${() => setEdit(m)}><span class="dot" style=${{ background: m.color }}></span><span class="item-txt">${m.nom}${m.escola ? html`<small class="muted"> · ${m.escola}${m.curs ? ` (${m.curs})` : ''}</small>` : ''}</span><${Icon} n="edit" size=${16} /></li>`)}</ul>
@@ -249,6 +259,18 @@ function Ajustos({ onLogout }) {
     </div>
     ${edit && html`<${MembreForm} m=${edit} onClose=${() => setEdit(null)} />`}
   </section>`;
+}
+
+function Aparenca() {
+  const [t, setT] = useState(tema());
+  const [plega, setPlega] = useState(lsGet('df.plegaFeina', true));
+  return html`<div class="card">
+    <h3>Aparença i agenda</h3>
+    <${Seg} small=${true} value=${t} onChange=${(v) => { setT(v); setTema(v); }} options=${[{ value: 'auto', label: 'Automàtic' }, { value: 'light', label: 'Clar' }, { value: 'dark', label: 'Fosc' }]} />
+    <p class="hint">Automàtic segueix el mode del mòbil. Es guarda en aquest dispositiu.</p>
+    <label class="check"><input type="checkbox" checked=${plega} onChange=${(e) => { setPlega(e.target.checked); lsSet('df.plegaFeina', e.target.checked); }} /> Plega la feina de l'altre a l'agenda</label>
+    <p class="hint">Si l'altre té dues o més coses de feina el mateix dia, surten en una sola línia que pots desplegar.</p>
+  </div>`;
 }
 
 function BotiguesEditor() {
@@ -278,7 +300,7 @@ function BotiguesEditor() {
 }
 
 function MembreForm({ m, onClose }) {
-  const [f, set] = useForm({ ...m, escola: m.escola || '', curs: m.curs || '' });
+  const [f, set] = useForm({ ...m, escola: m.escola || '', curs: m.curs || '', naixement: m.naixement || '' });
   const save = () => {
     const cfg = ctx.store.get('config') || {};
     const membres = (cfg.membres || []).map((x) => (x.id === m.id ? { ...x, ...f } : x));
@@ -288,6 +310,7 @@ function MembreForm({ m, onClose }) {
   return html`<${Sheet} title=${m.nom} onClose=${onClose} actions=${html`<button class="btn primary" onClick=${save}>Desa</button>`}>
     <${Field} label="Nom"><input value=${f.nom} onInput=${set('nom')} /><//>
     <${Field} label="Color"><input type="color" value=${f.color} onInput=${set('color')} /><//>
-    ${!m.adult && html`<${Field} label="Escola"><input value=${f.escola} onInput=${set('escola')} /><//><${Field} label="Curs"><input value=${f.curs} onInput=${set('curs')} /><//>`}
+    ${!m.adult && html`<${Field} label="Escola"><input value=${f.escola} onInput=${set('escola')} /><//><${Field} label="Curs"><input value=${f.curs} onInput=${set('curs')} /><//>
+      <${Field} label="Data de naixement" hint="Per calcular l'edat a Salut i a Frases i fites."><input type="date" value=${f.naixement} onInput=${set('naixement')} /><//>`}
   <//>`;
 }
