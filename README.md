@@ -34,11 +34,11 @@ Si el perdeu o el voleu canviar: *Més → Ajustos → Desconnecta* i torneu a e
 
 ## Què hi ha
 
-- **Avui:** la cinta del dia (on és cadascú d'hora en hora), dinar dels nens i sopar previst, agenda, tasques pendents, compra ràpida, avisos i el temps a Caldes. A partir de les 20 h mostra directament demà.
+- **Avui:** tira dels 7 pròxims dies amb el temps; per al dia triat, primer l'agenda (si hi ha res), després menjar, tasques, on és cadascú, compra, avisos i Barça. A partir de les 20 h comença per demà.
 - **Agenda:** calendari mensual amb els vostres esdeveniments, el calendari escolar, els partits del Barça i les caducitats; horaris setmanals editables; calendari escolar 2026-27.
 - **Menjar:** proposta de sopars per a la setmana, menú de l'escola i el catàleg de plats que feu a casa.
-- **Llistes:** compra (es classifica sola per seccions i recorda els habituals), tasques amb responsable, data i repetició, i coses per casa.
-- **Més:** idees de regals (es poden amagar a l'altre), documents amb avís a 90, 30 i 7 dies, Barça i ajustos.
+- **Llistes:** compra agrupada per botigues (Mercat, Mercadona, Caprabo, Altres; es canvien a *Ajustos*), tasques amb responsable, data i repetició, i coses per casa.
+- **Més:** aniversaris, idees de regals (es poden amagar a l'altre), documents amb avís a 90, 30 i 7 dies, Barça i ajustos.
 
 ### Com es proposen els sopars
 

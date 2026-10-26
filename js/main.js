@@ -132,7 +132,7 @@ function App() {
   return html`<div class="shell">
     <nav class="nav" aria-label="Seccions">
       <div class="brand"><div class="logo-dots sm"><i></i><i></i><i></i><i></i></div><span>Casa</span></div>
-      ${NAV.map(([k, ic, label]) => html`<a href=${`#/${k}`} class=${view === k ? 'on' : ''} aria-current=${view === k ? 'page' : null}><${Icon} n=${ic} size=${22} /><span>${label}</span></a>`)}
+      ${NAV.map(([k, ic, label]) => html`<a href=${`#/${k}`} class=${(view === k ? 'on ' : '') + 'nav-' + k} aria-current=${view === k ? 'page' : null}><${Icon} n=${ic} size=${22} /><span>${label}</span></a>`)}
       <div class="nav-foot"><${SyncBadge} /></div>
     </nav>
     <div class="topbar"><${SyncBadge} /></div>

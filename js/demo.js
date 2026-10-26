@@ -36,12 +36,13 @@ export function demoSeed() {
   return {
     'data/config.json': {
       membres: [
-        { id: 'pau', nom: 'Pau', color: '#2F6FDB', adult: true },
-        { id: 'laia', nom: 'Laia', color: '#C2407A', adult: true },
-        { id: 'nil', nom: 'Nil', color: '#2E9E6A', escola: 'Escola de demostració', curs: 'I3' },
-        { id: 'jana', nom: 'Jana', color: '#D99A0B', escola: 'Llar d\'infants', curs: 'I1' },
+        { id: 'pau', nom: 'Pau', color: '#F07F1E', adult: true },
+        { id: 'laia', nom: 'Laia', color: '#22A55B', adult: true },
+        { id: 'nil', nom: 'Nil', color: '#E8B10A', escola: 'Escola de demostració', curs: 'I3' },
+        { id: 'jana', nom: 'Jana', color: '#8E57D9', escola: 'Llar d\'infants', curs: 'I1' },
       ],
       ubicacio: { nom: 'Caldes de Montbui', lat: 41.632, lon: 2.168 },
+      botigues: ['Mercat', 'Mercadona', 'Caprabo', 'Altres'],
     },
     'data/horaris.json': { items: blocs },
     'data/escolar.json': { items: ESCOLAR_2026_27 },
@@ -53,9 +54,10 @@ export function demoSeed() {
       { id: uid(), text: 'Treure les escombraries', qui: 'pau', data: ymd(avui), fet: false, recur: 'setmanal' },
       { id: uid(), text: 'Comprar el regal de l\'àvia', qui: 'tots', data: addDaysYmd(ymd(avui), 4), fet: false, recur: 'cap' },
     ] },
-    'data/compra.json': { items: ['Llet', 'Plàtans', 'Pa de motlle', 'Iogurts', 'Bolquers'].map((t, i) => ({ id: uid(), text: t, cat: ['Làctics i ous', 'Fruita i verdura', 'Rebost', 'Làctics i ous', 'Higiene i nens'][i], fet: false })) },
+    'data/compra.json': { items: ['Llet', 'Plàtans', 'Pa de motlle', 'Iogurts', 'Bolquers'].map((t, i) => ({ id: uid(), text: t, cat: ['Mercadona', 'Mercat', 'Mercadona', 'Caprabo', 'Altres'][i], fet: false })) },
     'data/casa.json': { items: [{ id: uid(), text: 'Bombeta del passadís', cat: 'Llar', fet: false }] },
     'data/regals.json': { items: [{ id: uid(), per: 'nil', ocasio: 'Nadal', idea: 'Bicicleta sense pedals', estat: 'idea' }] },
+    'data/aniversaris.json': { items: [{ id: uid(), nom: 'Àvia Rosa', dia: addDaysYmd(ymd(avui), 3).slice(5), any: 1952, relacio: 'àvia' }, { id: uid(), nom: 'Nil', dia: '03-14', any: 2023, relacio: 'fill' }] },
     'data/documents.json': { items: [{ id: uid(), tipus: 'DNI', persona: 'pau', caducitat: addDaysYmd(ymd(avui), 40) }] },
     'data/events.json': { items: [
       { id: uid(), title: 'Reunió d\'escola', date: addDaysYmd(dl, 2), time: '17:00', qui: ['laia'], cat: 'escola' },

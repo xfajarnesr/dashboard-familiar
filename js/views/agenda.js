@@ -1,13 +1,13 @@
 import { html, useState } from '../vendor/preact-htm.js';
 import { ctx, Icon, Sheet, Field, Seg, PersonPicker, Who, Empty, useForm } from '../ui.js';
-import { ymd, parseYmd, addDaysYmd, startOfWeek, fmtLlarg, MESOS_CAP, DIES_CURTS, uid, relatiu } from '../util.js';
+import { ymd, parseYmd, addDaysYmd, startOfWeek, fmtLlarg, fmtCurt, daysBetween, MESOS_CAP, DIES_CURTS, uid, relatiu } from '../util.js';
 import { ocurrencies, perDia, CATS, TIPUS_ESCOLAR } from '../calendar.js';
 import { HorarisView } from './horaris.js';
 import { lsGet, lsSet } from '../util.js';
 
 export function AgendaView({ sub }) {
   const tab = sub || 'calendari';
-  return html`<section class="view">
+  return html`<section class="view sec-agenda">
     <header class="view-head"><h1>Agenda</h1></header>
     <${Seg} value=${tab} onChange=${(v) => ctx.nav(`agenda/${v}`)} options=${[{ value: 'calendari', label: 'Calendari' }, { value: 'horaris', label: 'Horaris' }, { value: 'escolar', label: 'Calendari escolar' }]} />
     ${tab === 'calendari' && html`<${Calendari} />`}
@@ -17,9 +17,9 @@ export function AgendaView({ sub }) {
 }
 
 export function OcRow({ o, onEdit, showDate }) {
-  const editable = o.kind === 'event' || o.kind === 'escolar';
+  const editable = o.kind === 'event' || o.kind === 'escolar' || o.kind === 'aniv';
   return html`<li class=${'oc oc-' + o.kind} style=${{ '--c': o.color }} onClick=${() => editable && onEdit && onEdit(o)}>
-    <span class="oc-time">${showDate ? relatiu(o.date) : o.time || (o.multi ? '' : 'Tot el dia')}${showDate && o.time ? ` ${o.time}` : ''}</span>
+    <span class="oc-time">${showDate ? (daysBetween(ymd(), o.date) < 7 ? relatiu(o.date) : fmtCurt(o.date)) : o.time || (o.multi ? '' : 'Tot el dia')}${showDate && o.time ? ` ${o.time}` : ''}</span>
     <span class="oc-body"><span class="oc-title">${o.title}${o.anys > 0 && o.ref.mostraAnys ? ` (${o.anys})` : ''}</span>
       ${(o.sub || o.lloc || (o.time && o.timeEnd)) && html`<small class="muted">${[o.time && o.timeEnd ? `fins a les ${o.timeEnd}` : '', o.lloc, o.sub].filter(Boolean).join(' · ')}</small>`}
     </span>
@@ -32,18 +32,19 @@ function Calendari() {
   const [sel, setSel] = useState(ymd());
   const [edit, setEdit] = useState(null);
   const [barca, setBarca] = useState(lsGet('df.cal.barca', true));
+  const [femeni, setFemeni] = useState(lsGet('df.cal.femeni', false));
   const ini = ymd(startOfWeek(mes));
   const fiMes = new Date(mes.getFullYear(), mes.getMonth() + 1, 0);
   const fi = addDaysYmd(ymd(startOfWeek(fiMes)), 6);
-  const ocs = ocurrencies(ini, fi, { barca });
+  const ocs = ocurrencies(ini, fi, { barca, femeni });
   const m = perDia(ocs);
   const dies = [];
   for (let d = ini; d <= fi; d = addDaysYmd(d, 1)) dies.push(d);
   const avui = ymd();
   const delDia = m[sel] || [];
-  const propers = ocurrencies(avui, addDaysYmd(avui, 30), { barca }).filter((o) => !(o.multi && !o.first));
+  const propers = ocurrencies(avui, addDaysYmd(avui, 30), { barca, femeni }).filter((o) => !(o.multi && !o.first));
   const nou = () => setEdit({ id: null, title: '', date: sel, end: '', time: '', timeEnd: '', qui: [], cat: 'familia', repeat: 'cap', notes: '', lloc: '' });
-  const obre = (o) => setEdit(o.kind === 'escolar' ? { ...o.ref, _escolar: true } : o.ref);
+  const obre = (o) => (o.kind === 'aniv' ? ctx.nav('mes/aniversaris') : setEdit(o.kind === 'escolar' ? { ...o.ref, _escolar: true } : o.ref));
   return html`<div class="cal-wrap">
     <div class="cal">
       <div class="weeknav">
@@ -64,7 +65,8 @@ function Calendari() {
           </button>`;
         })}
       </div>
-      <label class="check small"><input type="checkbox" checked=${barca} onChange=${(e) => { setBarca(e.target.checked); lsSet('df.cal.barca', e.target.checked); }} /> Mostra els partits del Barça</label>
+      <label class="check small"><input type="checkbox" checked=${barca} onChange=${(e) => { setBarca(e.target.checked); lsSet('df.cal.barca', e.target.checked); }} /> Partits del Barça</label>
+      ${barca && html`<label class="check small"><input type="checkbox" checked=${femeni} onChange=${(e) => { setFemeni(e.target.checked); lsSet('df.cal.femeni', e.target.checked); }} /> També el Barça Femení</label>`}
     </div>
     <div class="cal-side">
       <div class="sec-head"><h3>${fmtLlarg(sel)}</h3><button class="btn primary sm" onClick=${nou}><${Icon} n="plus" size=${16} /> Afegeix</button></div>

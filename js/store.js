@@ -17,6 +17,7 @@ export const PATHS = {
   cataleg: 'data/sopars-cataleg.json',
   pla: 'data/sopars-pla.json',
   barca: 'data/barca.json',
+  aniversaris: 'data/aniversaris.json',
 };
 export function pathOf(key) {
   if (key.startsWith('menu:')) return `data/menus/${key.slice(5)}.json`;
@@ -31,7 +32,7 @@ function keyOf(path) {
 const DESC = {
   tasques: 'tasques', compra: 'compra', casa: 'coses per casa', regals: 'regals', documents: 'documents',
   events: 'calendari', escolar: 'calendari escolar', horaris: 'horaris', cataleg: 'catàleg de sopars',
-  pla: 'sopars', config: 'configuració',
+  pla: 'sopars', config: 'configuració', aniversaris: 'aniversaris',
 };
 
 export class AuthError extends Error {}

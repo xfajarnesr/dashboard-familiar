@@ -43,7 +43,7 @@ export function DinarNens({ d, curt }) {
   return html`<div class="dinars">${nens.map((n) => {
     const x = m[n.id];
     if (!x) return null;
-    return html`<div class="dinar"><span class="dinar-who" style=${{ color: n.color }}>${n.nom}</span>
+    return html`<div class="dinar"><span class="dinar-who" style=${{ color: `color-mix(in srgb, ${n.color} 75%, var(--ink))` }}>${n.nom}</span>
       <span class="dinar-plats">${curt ? x.plats.join(' · ') : x.plats.join(' · ')}</span> <${ProtChip} t=${x.proteina} /></div>`;
   })}</div>`;
 }
@@ -63,7 +63,7 @@ export function SoparLine({ d, onEdit }) {
 // ---------------- Vista ----------------
 export function MenjarView({ sub }) {
   const tab = sub || 'setmana';
-  return html`<section class="view">
+  return html`<section class="view sec-menjar">
     <header class="view-head"><h1>Menjar</h1></header>
     <${Seg} value=${tab} onChange=${(v) => ctx.nav(`menjar/${v}`)} options=${[{ value: 'setmana', label: 'Sopars' }, { value: 'escola', label: "Menú d'escola" }, { value: 'cataleg', label: 'Plats' }]} />
     ${tab === 'setmana' && html`<${Setmana} />`}

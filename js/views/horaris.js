@@ -45,7 +45,7 @@ export function DayRibbon({ date, ymdStr, compact }) {
     ${ctx.membres.map((m) => {
       const { ll, blocs } = estat(m);
       return html`<div class="ribbon-row">
-        <span class="ribbon-name" style=${{ color: m.color }}>${m.nom}</span>
+        <span class="ribbon-name" style=${{ color: `color-mix(in srgb, ${m.color} 75%, var(--ink))` }}>${m.nom}</span>
         <div class="ribbon-track">
           ${hores.map((h) => html`<i class="tick" style=${{ left: `${((h * 60 - H0) / span) * 100}%` }}></i>`)}
           ${blocs.length === 0 && html`<span class="ribbon-free">${ll || 'Sense horari'}</span>`}
@@ -62,7 +62,7 @@ export function DayRibbon({ date, ymdStr, compact }) {
       const m = ctx.membres.find((x) => x.id === b0.persona);
       const f = franges(blocsDe(b0.persona, dia)).find((x) => x.id === sel);
       if (!f) return null;
-      return html`<div class="ribbon-detail"><b style=${{ color: m?.color }}>${m?.nom}</b>
+      return html`<div class="ribbon-detail"><b style=${{ color: `color-mix(in srgb, ${m?.color} 75%, var(--ink))` }}>${m?.nom}</b>
         <ul>${f.items.map((b) => html`<li><span>${b.inici}–${b.fi}</span> ${b.text}${b.variable ? ' (variable)' : ''}</li>`)}</ul></div>`;
     })()}
   </div>`;

@@ -1,6 +1,7 @@
 // Ajunta totes les fonts del calendari en una llista d'ocurrències per dia
 import { ctx, colorDe } from './ui.js';
 import { parseYmd, ymd, addDaysYmd, daysBetween } from './util.js';
+import { ocurrenciaAny } from './aniversaris.js';
 
 export const CATS = {
   familia: { nom: 'Família', color: '#3B4A5C' },
@@ -14,6 +15,7 @@ export const TIPUS_ESCOLAR = {
   vacances: { nom: 'Vacances', color: '#2E9E6A' },
   festiu: { nom: 'Festiu', color: '#D6452F' },
   lliure: { nom: 'Lliure disposició', color: '#E0A21B' },
+  local: { nom: 'Festa local', color: '#E4572E' },
   curs: { nom: 'Curs', color: '#2F6FDB' },
 };
 
@@ -21,7 +23,7 @@ function eachDay(a, b, fn) {
   for (let d = a; d <= b; d = addDaysYmd(d, 1)) fn(d);
 }
 
-export function ocurrencies(from, to, { barca = true, docs = true } = {}) {
+export function ocurrencies(from, to, { barca = true, femeni = false, docs = true } = {}) {
   const s = ctx.store;
   const out = [];
   const push = (o) => { if (o.date >= from && o.date <= to) out.push(o); };
@@ -53,9 +55,18 @@ export function ocurrencies(from, to, { barca = true, docs = true } = {}) {
 
   if (barca) {
     for (const p of s.get('barca')?.partits || []) {
+      if (p.equip === 'femeni' && !femeni) continue;
       const d = ymd(new Date(p.data));
       const hora = new Date(p.data).toLocaleTimeString('ca', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Madrid' });
       push({ date: d, time: p.horaConfirmada === false ? null : hora, title: `${p.local} – ${p.visitant}`, kind: 'barca', color: '#A50044', ref: p, sub: p.competicio + (p.equip === 'femeni' ? ' · Femení' : '') });
+    }
+  }
+
+  for (const a of s.items('aniversaris')) {
+    if (!a.dia) continue;
+    for (let y = parseYmd(from).getFullYear(); y <= parseYmd(to).getFullYear(); y++) {
+      const o = ocurrenciaAny(a, y);
+      push({ date: o.date, title: `Aniversari ${a.nom}${o.edat ? ` (${o.edat})` : ''}`, kind: 'aniv', color: '#E0457B', ref: a, sub: a.relacio });
     }
   }
 

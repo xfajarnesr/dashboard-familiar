@@ -1,43 +1,51 @@
 import { html, useState } from '../vendor/preact-htm.js';
 import { ctx, Icon, Sheet, Field, Seg, PersonPicker, Who, Empty, useForm, nomDe } from '../ui.js';
-import { ymd, addDaysYmd, parseYmd, fmtCurt, relatiu, uid, norm, daysBetween, startOfWeek } from '../util.js';
+import { ymd, addDaysYmd, parseYmd, fmtCurt, relatiu, uid, norm, daysBetween, startOfWeek, lsGet, lsSet } from '../util.js';
 
-// ---------- Categories de la compra ----------
-export const CATS_COMPRA = [
-  ['Fruita i verdura', 'fruita verdura poma platan pera taronja mandarina maduix raim kiwi melo sindria pressec llimona alvocat advocat tomaquet enciam ceba all pastanaga carbasso carbassa broquil brocoli coliflor patata pebrot cogombre espinac bolet xampinyo mongeta tendra porro api moniato julivert bledes alberginia amanida ruca canonge'],
-  ['Carn i peix', 'pollastre gall dindi vedella porc carn llom hamburguesa salsitxa botifarra pernil peix salmo lluc bacalla gambes sepia orada llobarro calamar musclo filet'],
-  ['Làctics i ous', 'llet iogurt formatge mantega nata ous ou kefir mato'],
-  ['Congelats', 'gyoza pizza gelat congelat croquet pesols nuggets'],
-  ['Rebost', 'arros pasta macarrons espaguetis fideus farina oli sal sucre cigrons llenties mongetes tonyina fregit cafe te galetes cereals pa torrades xocolata cacau quinoa cuscus salsa vinagre especies orenga llevat melmelada sopa brou'],
-  ['Neteja i llar', 'detergent sabo lleixiu paper rotllo bosses esponja fregall suavitzant rentaplats netejavidres escombraries'],
-  ['Higiene i nens', 'bolquer tovallolet xampu gel pasta de dents crema raspall compreses bastonets colonia'],
-  ['Altres', ''],
-];
+// ---------- Botigues (categories de la compra) ----------
+export const BOTIGUES_DEF = ['Mercat', 'Mercadona', 'Caprabo', 'Altres'];
+const COLORS_BOTIGA = ['#E4572E', '#2F6FDB', '#0E9AA7', '#7A5AC8', '#C2407A', '#5F8F2E', '#8A94A3'];
+export function botigues() {
+  const b = ctx.store.get('config')?.botigues;
+  return Array.isArray(b) && b.length ? b : BOTIGUES_DEF;
+}
+export function colorBotiga(nom) {
+  const bs = botigues();
+  const i = bs.indexOf(nom);
+  if (i === bs.length - 1 || i < 0) return '#8A94A3';
+  return COLORS_BOTIGA[i % COLORS_BOTIGA.length];
+}
+// Per defecte: on s'havia comprat abans; si no, fruita/verdura/carn/peix al mercat; si no, l'última botiga triada.
+const FRESC = 'fruita verdura poma platan pera taronja mandarina maduix raim kiwi melo sindria pressec llimona alvocat advocat tomaquet enciam ceba all pastanaga carbasso carbassa broquil brocoli coliflor patata pebrot cogombre espinac bolet xampinyo mongeta tendra porro api moniato julivert bledes alberginia ruca canonge pollastre gall dindi vedella porc carn llom salsitxa botifarra peix salmo lluc bacalla gambes sepia orada llobarro calamar musclo filet sardin';
 export function categoritza(text) {
+  const bs = botigues();
   const t = norm(text);
-  for (const [cat, kw] of CATS_COMPRA) {
-    if (kw && kw.split(' ').some((k) => k.length > 2 && (t.includes(k) || (k.length > 4 && t.includes(k.slice(0, -1)))))) return cat;
-  }
-  return 'Altres';
+  const ant = ctx.store.items('compra').find((i) => norm(i.text) === t && bs.includes(i.cat));
+  if (ant) return ant.cat;
+  if (bs.includes('Mercat') && FRESC.split(' ').some((k) => k.length > 2 && t.includes(k))) return 'Mercat';
+  const ult = lsGet('df.botiga');
+  return bs.includes(ult) ? ult : bs[bs.length - 1];
 }
 const CATS_CASA = ['Llar', 'Cuina', 'Bricolatge', 'Nens', 'Roba', 'Papers i gestions', 'Altres'];
 
 export function LlistesView({ sub }) {
   const tab = sub || 'compra';
-  return html`<section class="view">
+  return html`<section class="view sec-llistes">
     <header class="view-head"><h1>Llistes</h1></header>
     <${Seg} value=${tab} onChange=${(v) => ctx.nav(`llistes/${v}`)} options=${[{ value: 'compra', label: 'Compra' }, { value: 'tasques', label: 'Tasques' }, { value: 'casa', label: 'Per casa' }]} />
-    ${tab === 'compra' && html`<${Llista} k="compra" cats=${CATS_COMPRA.map((c) => c[0])} auto=${true} placeholder="Afegeix a la compra…" buit="La llista és buida" buitText="Escriu el que falta i prem Retorn. Ho veureu tots dos al moment." />`}
-    ${tab === 'casa' && html`<${Llista} k="casa" cats=${CATS_CASA} placeholder="Què ens cal per casa?" buit="No falta res" buitText="Bombetes, una prestatgeria, un regal de casament… tot el que no és de supermercat." />`}
+    ${tab === 'compra' && html`<${Llista} key="compra" k="compra" cats=${botigues()} botiga=${true} placeholder="Afegeix a la compra…" buit="La llista és buida" buitText="Tria la botiga, escriu el que falta i prem Retorn. Pots posar-ne uns quants separats per comes." />`}
+    ${tab === 'casa' && html`<${Llista} key="casa" k="casa" cats=${CATS_CASA} placeholder="Què ens cal per casa?" buit="No falta res" buitText="Bombetes, una prestatgeria, un regal de casament… tot el que no és de supermercat." />`}
     ${tab === 'tasques' && html`<${Tasques} />`}
   </section>`;
 }
 
-function Llista({ k, cats, auto, placeholder, buit, buitText }) {
+function Llista({ k, cats, botiga, placeholder, buit, buitText }) {
   const [txt, setTxt] = useState('');
-  const [cat, setCat] = useState(cats[0]);
+  const [cat, setCatS] = useState(() => (botiga && cats.includes(lsGet('df.botiga')) ? lsGet('df.botiga') : cats[0]));
+  const setCat = (c) => { setCatS(c); if (botiga) lsSet('df.botiga', c); };
   const [edit, setEdit] = useState(null);
   const [veureFets, setVeureFets] = useState(false);
+  const cur = cats.includes(cat) ? cat : cats[0];
   const items = ctx.store.items(k);
   const pend = items.filter((i) => !i.fet);
   const fets = items.filter((i) => i.fet).sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''));
@@ -47,25 +55,27 @@ function Llista({ k, cats, auto, placeholder, buit, buitText }) {
     const parts = txt.split(/\s*[,;]\s*/).map((s) => s.trim()).filter(Boolean);
     for (const p of parts) {
       const ex = items.find((i) => norm(i.text) === norm(p));
-      if (ex) ctx.store.upsert(k, { id: ex.id, fet: false, by: ctx.me }, `afegeix ${p}`);
-      else ctx.store.upsert(k, { id: uid(), text: p, cat: auto ? categoritza(p) : cat, fet: false, by: ctx.me }, `afegeix ${p}`);
+      if (ex) ctx.store.upsert(k, { id: ex.id, fet: false, cat: cur, by: ctx.me }, `afegeix ${p}`);
+      else ctx.store.upsert(k, { id: uid(), text: p, cat: cur, fet: false, by: ctx.me }, `afegeix ${p}`);
     }
     setTxt('');
   };
   const toggle = (i) => ctx.store.upsert(k, { id: i.id, fet: !i.fet, vegades: !i.fet ? (i.vegades || 0) + 1 : i.vegades || 0, by: ctx.me }, `${i.fet ? 'torna a posar' : 'marca'} ${i.text}`);
   const buidaFets = () => { ctx.store.mutate(k, { t: 'delMany', ids: fets.filter((i) => (i.vegades || 0) < 2).map((i) => i.id) }, 'neteja la llista'); ctx.toast('Fets esborrats (es queden els habituals)'); };
-  const grups = cats.map((c) => [c, pend.filter((i) => (i.cat || cats[cats.length - 1]) === c)]).filter(([, g]) => g.length);
-  const altres = pend.filter((i) => !cats.includes(i.cat));
-  if (altres.length) grups.push(['Altres', altres]);
+  const ultima = cats[cats.length - 1];
+  const grupDe = (i) => (cats.includes(i.cat) ? i.cat : ultima);
+  const grups = cats.map((c) => [c, pend.filter((i) => grupDe(i) === c)]).filter(([, g]) => g.length);
+  const col = (c) => (botiga ? colorBotiga(c) : 'var(--sec)');
   return html`<div>
+    ${botiga && html`<div class="botigues" role="radiogroup" aria-label="Botiga">${cats.map((c) => html`<button type="button" role="radio" aria-checked=${c === cur} class=${'bchip' + (c === cur ? ' on' : '')} style=${{ '--c': col(c) }} onClick=${() => setCat(c)}>${c}<span>${pend.filter((i) => grupDe(i) === c).length || ''}</span></button>`)}</div>`}
     <form class="addbar" onSubmit=${afegir}>
-      <input value=${txt} onInput=${(e) => setTxt(e.target.value)} placeholder=${placeholder} aria-label=${placeholder} enterkeyhint="done" />
-      ${!auto && html`<select value=${cat} onChange=${(e) => setCat(e.target.value)} aria-label="Categoria">${cats.map((c) => html`<option>${c}</option>`)}</select>`}
+      <input value=${txt} onInput=${(e) => setTxt(e.target.value)} placeholder=${botiga ? `Afegeix a ${cur}…` : placeholder} aria-label=${placeholder} enterkeyhint="done" />
+      ${!botiga && html`<select value=${cur} onChange=${(e) => setCat(e.target.value)} aria-label="Categoria">${cats.map((c) => html`<option value=${c}>${c}</option>`)}</select>`}
       <button class="btn primary" aria-label="Afegeix"><${Icon} n="plus" size=${18} /></button>
     </form>
     ${habituals.length > 0 && html`<div class="habituals"><span class="lbl">Habituals</span><div class="chips">${habituals.map((i) => html`<button class="chip" onClick=${() => toggle(i)}>+ ${i.text}</button>`)}</div></div>`}
     ${pend.length === 0 && html`<${Empty} title=${buit} text=${buitText} />`}
-    ${grups.map(([c, g]) => html`<div class="lgroup"><h3>${c} <span class="muted">${g.length}</span></h3>
+    ${grups.map(([c, g]) => html`<div class="lgroup" style=${{ '--c': col(c) }}><h3><span class="gdot"></span>${c} <span class="muted">${g.length}</span></h3>
       <ul class="items">${g.map((i) => html`<li class="item">
         <button class="tick-box" aria-label=${`Marca ${i.text}`} onClick=${() => toggle(i)}></button>
         <span class="item-txt" onClick=${() => toggle(i)}>${i.text}${i.nota ? html`<small class="muted"> · ${i.nota}</small>` : ''}</span>
@@ -77,17 +87,17 @@ function Llista({ k, cats, auto, placeholder, buit, buitText }) {
       ${veureFets && html`<ul class="items done">${fets.slice(0, 60).map((i) => html`<li class="item"><button class="tick-box on" aria-label=${`Torna a posar ${i.text}`} onClick=${() => toggle(i)}><${Icon} n="check" size=${14} /></button><span class="item-txt" onClick=${() => toggle(i)}>${i.text}</span></li>`)}</ul>
         <button class="btn ghost" onClick=${buidaFets}>Neteja els fets</button>`}
     </div>`}
-    ${edit && html`<${ItemForm} k=${k} item=${edit} cats=${cats} onClose=${() => setEdit(null)} />`}
+    ${edit && html`<${ItemForm} k=${k} item=${{ ...edit, cat: grupDe(edit) }} cats=${cats} botiga=${botiga} onClose=${() => setEdit(null)} />`}
   </div>`;
 }
 
-function ItemForm({ k, item, cats, onClose }) {
+function ItemForm({ k, item, cats, botiga, onClose }) {
   const [f, set] = useForm({ ...item, nota: item.nota || '' });
   const save = () => { ctx.store.upsert(k, { id: f.id, text: f.text, cat: f.cat, nota: f.nota }, `edita ${f.text}`); onClose(); };
   const del = () => { ctx.store.remove(k, f.id, `treu ${f.text}`); onClose(); };
   return html`<${Sheet} title="Edita" onClose=${onClose} actions=${html`<button class="btn ghost danger" onClick=${del}><${Icon} n="trash" size=${16} /> Esborra</button><button class="btn primary" onClick=${save}>Desa</button>`}>
     <${Field} label="Què"><input value=${f.text} onInput=${set('text')} /><//>
-    <${Field} label="Categoria"><select value=${f.cat} onChange=${set('cat')}>${cats.map((c) => html`<option>${c}</option>`)}</select><//>
+    <${Field} label=${botiga ? 'Botiga' : 'Categoria'}><select value=${f.cat} onChange=${set('cat')}>${cats.map((c) => html`<option value=${c}>${c}</option>`)}</select><//>
     <${Field} label="Nota"><input value=${f.nota} onInput=${set('nota')} placeholder="Marca, quantitat, botiga…" /><//>
   <//>`;
 }

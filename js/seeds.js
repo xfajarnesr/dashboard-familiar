@@ -35,15 +35,93 @@ export const CATALEG = [
 ];
 
 export const ESCOLAR_2026_27 = [
-  { id: 'esc-inici', date: '2026-09-08', title: 'Inici de curs', tipus: 'curs' },
-  { id: 'esc-9oct', date: '2026-10-09', title: 'Festiu escolar', tipus: 'festiu', nota: 'Marcat com a festiu als menús de les escoles' },
-  { id: 'esc-pilar', date: '2026-10-12', title: 'Festa del Pilar', tipus: 'festiu' },
-  { id: 'esc-tots-sants', date: '2026-11-01', title: 'Tots Sants', tipus: 'festiu' },
-  { id: 'esc-constitucio', date: '2026-12-06', title: 'Dia de la Constitució', tipus: 'festiu' },
-  { id: 'esc-immaculada', date: '2026-12-08', title: 'La Immaculada', tipus: 'festiu' },
-  { id: 'esc-nadal', date: '2026-12-22', end: '2027-01-07', title: 'Vacances de Nadal', tipus: 'vacances' },
-  { id: 'esc-ss', date: '2027-03-20', end: '2027-03-29', title: 'Vacances de Setmana Santa', tipus: 'vacances' },
-  { id: 'esc-1maig', date: '2027-05-01', title: 'Festa del Treball', tipus: 'festiu' },
-  { id: 'esc-final', date: '2027-06-21', title: 'Últim dia de curs', tipus: 'curs' },
-  { id: 'esc-sant-joan', date: '2027-06-24', title: 'Sant Joan', tipus: 'festiu' },
+ {
+  "id": "esc-inici",
+  "date": "2026-09-08",
+  "title": "Inici de curs",
+  "tipus": "curs"
+ },
+ {
+  "id": "esc-diada",
+  "date": "2026-09-11",
+  "title": "Diada Nacional",
+  "tipus": "festiu"
+ },
+ {
+  "id": "esc-festa-local-oct",
+  "date": "2026-10-09",
+  "title": "Festa local",
+  "tipus": "local",
+  "nota": "Caldes de Montbui"
+ },
+ {
+  "id": "esc-pilar",
+  "date": "2026-10-12",
+  "title": "Dia del Pilar",
+  "tipus": "festiu"
+ },
+ {
+  "id": "esc-lliure-7des",
+  "date": "2026-12-07",
+  "title": "Lliure disposició",
+  "tipus": "lliure"
+ },
+ {
+  "id": "esc-immaculada",
+  "date": "2026-12-08",
+  "title": "La Immaculada",
+  "tipus": "festiu"
+ },
+ {
+  "id": "esc-nadal",
+  "date": "2026-12-22",
+  "title": "Vacances de Nadal",
+  "tipus": "vacances",
+  "end": "2027-01-07"
+ },
+ {
+  "id": "esc-lliure-8feb",
+  "date": "2027-02-08",
+  "title": "Lliure disposició",
+  "tipus": "lliure"
+ },
+ {
+  "id": "esc-ss",
+  "date": "2027-03-20",
+  "title": "Vacances de Setmana Santa",
+  "tipus": "vacances",
+  "end": "2027-03-29"
+ },
+ {
+  "id": "esc-lliure-30abr",
+  "date": "2027-04-30",
+  "title": "Lliure disposició",
+  "tipus": "lliure"
+ },
+ {
+  "id": "esc-lliure-14mai",
+  "date": "2027-05-14",
+  "title": "Lliure disposició",
+  "tipus": "lliure"
+ },
+ {
+  "id": "esc-festa-local-mai",
+  "date": "2027-05-17",
+  "title": "Festa local",
+  "tipus": "local",
+  "nota": "Previsió (Caldes de Montbui)"
+ },
+ {
+  "id": "esc-final",
+  "date": "2027-06-21",
+  "title": "Últim dia de curs",
+  "tipus": "curs",
+  "nota": "ESO; les escoles també acaben el 21 de juny"
+ },
+ {
+  "id": "esc-sant-joan",
+  "date": "2027-06-24",
+  "title": "Sant Joan",
+  "tipus": "festiu"
+ }
 ];

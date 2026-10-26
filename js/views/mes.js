@@ -1,21 +1,26 @@
 import { html, useState } from '../vendor/preact-htm.js';
 import { ctx, Icon, Sheet, Field, Seg, PersonPicker, Who, Empty, useForm, nomDe, colorDe } from '../ui.js';
-import { ymd, parseYmd, fmtData, fmtLlarg, daysBetween, uid, relatiu, lsGet, lsSet } from '../util.js';
+import { ymd, parseYmd, fmtData, fmtLlarg, daysBetween, uid, relatiu, lsGet, lsSet, MESOS, deMes } from '../util.js';
+import { proper, propers } from '../aniversaris.js';
+import { botigues, BOTIGUES_DEF, colorBotiga } from './llistes.js';
 
 export function MesView({ sub, onLogout }) {
   if (sub === 'regals') return html`<${Regals} />`;
+  if (sub === 'aniversaris') return html`<${Aniversaris} />`;
   if (sub === 'documents') return html`<${Documents} />`;
   if (sub === 'barca') return html`<${Barca} />`;
   if (sub === 'ajustos') return html`<${Ajustos} onLogout=${onLogout} />`;
   const docsAvis = ctx.store.items('documents').filter((d) => d.caducitat && daysBetween(ymd(), d.caducitat) <= 90).length;
   const regals = ctx.store.items('regals').filter((r) => r.estat !== 'donat' && visible(r)).length;
+  const pa = propers(30);
   const tiles = [
+    ['aniversaris', 'cake', 'Aniversaris', pa.length ? `${pa[0].a.nom} ${pa[0].falten === 0 ? 'avui' : pa[0].falten === 1 ? 'demà' : `d'aquí a ${pa[0].falten} dies`}` : 'Els que no es poden oblidar'],
     ['regals', 'gift', 'Idees de regals', regals ? `${regals} idees obertes` : 'Apunta-les quan surtin'],
     ['documents', 'doc', 'Documents', docsAvis ? `${docsAvis} caduquen aviat` : 'Dates de caducitat'],
     ['barca', 'ball', 'Barça', 'Calendari i resultats'],
     ['ajustos', 'gear', 'Ajustos', 'Família, connexió, còpia'],
   ];
-  return html`<section class="view">
+  return html`<section class="view sec-mes">
     <header class="view-head"><h1>Més</h1></header>
     <div class="tiles">${tiles.map(([k, ic, t, s]) => html`<button class="tile" onClick=${() => ctx.nav(`mes/${k}`)}><${Icon} n=${ic} size=${26} /><span><b>${t}</b><small>${s}</small></span></button>`)}</div>
   </section>`;
@@ -38,7 +43,7 @@ function Regals() {
   const per = {};
   for (const r of rs) (per[r.per || 'Sense persona'] ||= []).push(r);
   const noms = Object.keys(per).sort((a, b) => nomDe(a).localeCompare(nomDe(b)));
-  return html`<section class="view">
+  return html`<section class="view sec-mes">
     <${Back} title="Idees de regals"><button class="btn primary sm" onClick=${() => setEdit({ id: null, per: '', ocasio: 'Aniversari', idea: '', enllac: '', preu: '', estat: 'idea', amagat: false })}><${Icon} n="plus" size=${16} /> Idea</button><//>
     <${Seg} small=${true} value=${filtre} onChange=${setFiltre} options=${[{ value: 'obertes', label: 'Pendents' }, { value: 'donats', label: 'Ja donats' }]} />
     ${rs.length === 0 && html`<${Empty} title="Cap idea apuntada" text="Quan algú digui «m'agradaria…», apunta-ho aquí. Pots amagar una idea perquè només la vegis tu." />`}
@@ -77,6 +82,55 @@ function RegalForm({ r, onClose }) {
   <//>`;
 }
 
+// ---------- Aniversaris ----------
+function Aniversaris() {
+  const [edit, setEdit] = useState(null);
+  const avui = ymd();
+  const as = ctx.store.items('aniversaris').filter((a) => a.dia).map((a) => ({ a, ...proper(a, avui) })).sort((x, y) => x.falten - y.falten);
+  const quan = (n) => (n === 0 ? 'avui' : n === 1 ? 'demà' : n < 7 ? `d'aquí a ${n} dies` : null);
+  return html`<section class="view sec-mes">
+    <${Back} title="Aniversaris"><button class="btn primary sm" onClick=${() => setEdit({ id: null, nom: '', dia: '', any: '', relacio: '', notes: '' })}><${Icon} n="plus" size=${16} /> Afegeix</button><//>
+    <p class="hint">Surten al calendari cada any, i a la pantalla d'Avui la setmana abans.</p>
+    ${as.length === 0 && html`<${Empty} title="Encara no n'hi ha cap" text="Comenceu pels de casa, els avis i els padrins." />`}
+    <ul class="anivs">${as.map(({ a, date, edat, falten }) => {
+      const d = parseYmd(date);
+      return html`<li class=${'aniv' + (falten <= 7 ? ' aviat' : '')} onClick=${() => setEdit(a)}>
+        <span class="aniv-date"><b>${d.getDate()}</b><small>${MESOS[d.getMonth()].slice(0, 3)}</small></span>
+        <span class="aniv-body"><b>${a.nom}</b><small class="muted">${[a.relacio, edat ? (falten === 0 ? `fa ${edat} anys` : `en farà ${edat}`) : null].filter(Boolean).join(' · ')}</small></span>
+        ${quan(falten) ? html`<span class="tag hot">${quan(falten)}</span>` : html`<span class="muted small">${falten} dies</span>`}
+      </li>`;
+    })}</ul>
+    ${edit && html`<${AnivForm} a=${edit} onClose=${() => setEdit(null)} />`}
+  </section>`;
+}
+
+function AnivForm({ a, onClose }) {
+  const [m0, d0] = (a.dia || '').split('-');
+  const [f, set, setF] = useForm({ ...a, mes: m0 ? String(Number(m0)) : '1', diaN: d0 ? String(Number(d0)) : '', any: a.any ? String(a.any) : '', relacio: a.relacio || '', notes: a.notes || '' });
+  const save = () => {
+    const d = Number(f.diaN), m = Number(f.mes);
+    if (!f.nom.trim() || !d || d > 31) return ctx.toast('Posa el nom i el dia');
+    const { mes, diaN, ...rest } = f;
+    const item = { ...rest, id: f.id || uid(), nom: f.nom.trim(), dia: `${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`, any: f.any ? Number(f.any) : null };
+    ctx.store.upsert('aniversaris', item, `aniversari de ${item.nom}`);
+    onClose();
+  };
+  const del = () => { ctx.store.remove('aniversaris', f.id, `treu aniversari de ${f.nom}`); onClose(); };
+  const idea = () => { onClose(); ctx.nav('mes/regals'); };
+  return html`<${Sheet} title=${a.id ? a.nom : 'Nou aniversari'} onClose=${onClose}
+    actions=${html`${a.id && html`<button class="btn ghost danger" onClick=${del}><${Icon} n="trash" size=${16} /> Esborra</button>`}<button class="btn primary" onClick=${save}>Desa</button>`}>
+    <${Field} label="Qui"><input value=${f.nom} onInput=${set('nom')} placeholder="Àvia Montse" /><//>
+    <div class="row3">
+      <${Field} label="Dia"><input inputmode="numeric" value=${f.diaN} onInput=${set('diaN')} placeholder="14" /><//>
+      <${Field} label="Mes"><select value=${f.mes} onChange=${set('mes')}>${MESOS.map((m, i) => html`<option value=${i + 1}>${m}</option>`)}</select><//>
+      <${Field} label="Any (opcional)"><input inputmode="numeric" value=${f.any} onInput=${set('any')} placeholder="1958" /><//>
+    </div>
+    <${Field} label="Relació" hint="Per exemple: àvia, cosí, amic de l'Ícar."><input value=${f.relacio} onInput=${set('relacio')} /><//>
+    <${Field} label="Notes"><input value=${f.notes} onInput=${set('notes')} placeholder="Li agraden les plantes…" /><//>
+    ${a.id && html`<button class="linkbtn" onClick=${idea}>Apunta una idea de regal</button>`}
+  <//>`;
+}
+
 // ---------- Documents ----------
 const TIPUS_DOC = ['DNI', 'Passaport', 'Targeta sanitària', 'Carnet de conduir', 'Targeta de família nombrosa', 'ITV del cotxe', 'Assegurança del cotxe', 'Assegurança de la llar', 'Revisió de la caldera', 'Altres'];
 export function estatDoc(d) {
@@ -91,7 +145,7 @@ export function estatDoc(d) {
 function Documents() {
   const [edit, setEdit] = useState(null);
   const ds = ctx.store.items('documents').slice().sort((a, b) => (a.caducitat || '9999').localeCompare(b.caducitat || '9999'));
-  return html`<section class="view">
+  return html`<section class="view sec-mes">
     <${Back} title="Documents"><button class="btn primary sm" onClick=${() => setEdit({ id: null, tipus: 'DNI', persona: ctx.me, caducitat: '', notes: '' })}><${Icon} n="plus" size=${16} /> Afegeix</button><//>
     <p class="hint">Només el tipus i la data de caducitat. No hi poseu números de document: avisarem a 90, 30 i 7 dies.</p>
     ${ds.length === 0 && html`<${Empty} title="Encara no hi ha cap document" text="Comenceu pels DNI, passaports i targetes sanitàries de tots quatre." action=${html`<div class="chips">${['DNI', 'Passaport', 'Targeta sanitària', 'ITV del cotxe'].map((t) => html`<button class="chip" onClick=${() => setEdit({ id: null, tipus: t, persona: ctx.me, caducitat: '', notes: '' })}>+ ${t}</button>`)}</div>`} />`}
@@ -136,7 +190,7 @@ function Barca() {
   const ara = new Date().toISOString();
   const propers = tots.filter((p) => p.data >= ara || p.estat === 'en joc').slice(0, 12);
   const resultats = tots.filter((p) => p.data < ara && p.resultat).slice(-6).reverse();
-  return html`<section class="view">
+  return html`<section class="view sec-mes">
     <${Back} title="Barça" />
     <${Seg} small=${true} value=${eq} onChange=${(v) => { setEq(v); lsSet('df.barca.eq', v); }} options=${[{ value: 'masculi', label: 'Masculí' }, { value: 'femeni', label: 'Femení' }, { value: 'tots', label: 'Tots' }]} />
     ${!b && html`<${Empty} title="Encara no hi ha partits" text="Un procés automàtic els actualitza cada 6 hores al repo de dades. Si falla, ho veuràs aquí." />`}
@@ -169,7 +223,7 @@ function Ajustos({ onLogout }) {
     a.click();
   };
   const conn = lsGet('df.conn') || {};
-  return html`<section class="view">
+  return html`<section class="view sec-mes">
     <${Back} title="Ajustos" />
     <div class="card">
       <h3>Qui ets en aquest dispositiu</h3>
@@ -188,12 +242,39 @@ function Ajustos({ onLogout }) {
         <button class="btn" onClick=${backup}>Descarrega còpia (JSON)</button>
         <button class="btn ghost danger" onClick=${() => { if (confirm("Desconnectar aquest dispositiu? Hauràs de tornar a enganxar el token.")) onLogout(); }}>Desconnecta</button></div>
     </div>
+    <${BotiguesEditor} />
     <div class="card">
       <h3>Ubicació del temps</h3>
       <p>${cfg.ubicacio?.nom || 'Caldes de Montbui'} <span class="muted small">(${cfg.ubicacio?.lat}, ${cfg.ubicacio?.lon})</span></p>
     </div>
     ${edit && html`<${MembreForm} m=${edit} onClose=${() => setEdit(null)} />`}
   </section>`;
+}
+
+function BotiguesEditor() {
+  const [txt, setTxt] = useState('');
+  const bs = botigues();
+  const desa = (llista, desc) => ctx.store.mutate('config', { t: 'patch', value: { botigues: llista } }, desc);
+  const afegeix = (e) => {
+    e.preventDefault();
+    const t = txt.trim();
+    if (!t || bs.includes(t)) return;
+    desa([...bs.slice(0, -1), t, bs[bs.length - 1]], `afegeix botiga ${t}`);
+    setTxt('');
+  };
+  const mou = (i, d) => { const l = bs.slice(); [l[i], l[i + d]] = [l[i + d], l[i]]; desa(l, 'reordena botigues'); };
+  const treu = (b) => { if (bs.length > 1) desa(bs.filter((x) => x !== b), `treu botiga ${b}`); };
+  return html`<div class="card">
+    <h3>Botigues de la compra</h3>
+    <p class="hint">La compra s'agrupa per aquestes botigues. L'última recull el que no tingui botiga.</p>
+    <ul class="items">${bs.map((b, i) => html`<li class="item">
+      <span class="dot" style=${{ background: colorBotiga(b) }}></span><span class="item-txt">${b}</span>
+      ${i > 0 && html`<button class="icon-btn sm" aria-label=${`Puja ${b}`} onClick=${() => mou(i, -1)}>↑</button>`}
+      ${i < bs.length - 1 && html`<button class="icon-btn sm" aria-label=${`Baixa ${b}`} onClick=${() => mou(i, 1)}>↓</button>`}
+      <button class="icon-btn sm" aria-label=${`Treu ${b}`} onClick=${() => treu(b)}><${Icon} n="x" size=${16} /></button>
+    </li>`)}</ul>
+    <form class="addbar mini" onSubmit=${afegeix}><input value=${txt} onInput=${(e) => setTxt(e.target.value)} placeholder="Nova botiga" aria-label="Nova botiga" /><button class="btn" aria-label="Afegeix botiga"><${Icon} n="plus" size=${18} /></button></form>
+  </div>`;
 }
 
 function MembreForm({ m, onClose }) {
