@@ -169,9 +169,9 @@ export function AvuiView() {
       ${ocsDia.length === 0 && agenda}
       <${Card} sec="compra" icon="cart" title="Compra" link=${`${compra.length} a la llista`} onLink=${() => ctx.nav('llistes/compra')}>
         <form class="addbar mini" onSubmit=${afegeixCompra}><input value=${txtCompra} onInput=${(e) => setTxtCompra(e.target.value)} placeholder="Falta alguna cosa?" aria-label="Afegeix a la compra" /><button class="btn primary" aria-label="Afegeix"><${Icon} n="plus" size=${18} /></button></form>
-        ${compra.length > 0 && html`<div class="compra-preview">${[...new Set(compra.map((i) => i.cat))].map((b) => {
-          const its = compra.filter((i) => i.cat === b);
-          return html`<p><b style=${{ color: colorBotiga(b) }}>${b}</b> ${its.slice(0, 8).map((i) => i.text).join(', ')}${its.length > 8 ? '…' : ''}</p>`;
+        ${compra.length > 0 && html`<div class="compra-preview">${[...new Set(compra.map((i) => i.cat || ''))].sort((x, y) => (x ? 1 : 0) - (y ? 1 : 0)).map((b) => {
+          const its = compra.filter((i) => (i.cat || '') === b);
+          return html`<p><b style=${{ color: colorBotiga(b) }}>${b || 'Qualsevol botiga'}</b> ${its.slice(0, 8).map((i) => i.text).join(', ')}${its.length > 8 ? '…' : ''}</p>`;
         })}</div>`}
       <//>
       ${avisos.length > 0 && html`<${Card} sec="avisos" icon="spark" title="Avisos">

@@ -9,22 +9,19 @@ export function botigues() {
   const b = ctx.store.get('config')?.botigues;
   return Array.isArray(b) && b.length ? b : BOTIGUES_DEF;
 }
+export const QUALSEVOL = 'Qualsevol botiga';
 export function colorBotiga(nom) {
   const bs = botigues();
   const i = bs.indexOf(nom);
-  if (i === bs.length - 1 || i < 0) return '#8A94A3';
+  if (i < 0) return '#8A94A3';
   return COLORS_BOTIGA[i % COLORS_BOTIGA.length];
 }
-// Per defecte: on s'havia comprat abans; si no, fruita/verdura/carn/peix al mercat; si no, l'última botiga triada.
-const FRESC = 'fruita verdura poma platan pera taronja mandarina maduix raim kiwi melo sindria pressec llimona alvocat advocat tomaquet enciam ceba all pastanaga carbasso carbassa broquil brocoli coliflor patata pebrot cogombre espinac bolet xampinyo mongeta tendra porro api moniato julivert bledes alberginia ruca canonge pollastre gall dindi vedella porc carn llom salsitxa botifarra peix salmo lluc bacalla gambes sepia orada llobarro calamar musclo filet sardin';
+// Per defecte una cosa és genèrica (cat buit: es compra a qualsevol botiga). Només és d'una botiga si ja s'havia comprat allà.
 export function categoritza(text) {
   const bs = botigues();
   const t = norm(text);
   const ant = ctx.store.items('compra').find((i) => norm(i.text) === t && bs.includes(i.cat));
-  if (ant) return ant.cat;
-  if (bs.includes('Mercat') && FRESC.split(' ').some((k) => k.length > 2 && t.includes(k))) return 'Mercat';
-  const ult = lsGet('df.botiga');
-  return bs.includes(ult) ? ult : bs[bs.length - 1];
+  return ant ? ant.cat : '';
 }
 const CATS_CASA = ['Llar', 'Cuina', 'Bricolatge', 'Nens', 'Roba', 'Papers i gestions', 'Altres'];
 
@@ -41,6 +38,7 @@ export function LlistesView({ sub }) {
 
 function Llista({ k, cats, botiga, placeholder, buit, buitText }) {
   const [txt, setTxt] = useState('');
+  if (botiga) cats = [QUALSEVOL, ...cats];
   const [cat, setCatS] = useState(() => (botiga && cats.includes(lsGet('df.botiga')) ? lsGet('df.botiga') : cats[0]));
   const setCat = (c) => { setCatS(c); if (botiga) lsSet('df.botiga', c); };
   const [edit, setEdit] = useState(null);
@@ -55,21 +53,22 @@ function Llista({ k, cats, botiga, placeholder, buit, buitText }) {
     const parts = txt.split(/\s*[,;]\s*/).map((s) => s.trim()).filter(Boolean);
     for (const p of parts) {
       const ex = items.find((i) => norm(i.text) === norm(p));
-      if (ex) ctx.store.upsert(k, { id: ex.id, fet: false, cat: cur, by: ctx.me }, `afegeix ${p}`);
-      else ctx.store.upsert(k, { id: uid(), text: p, cat: cur, fet: false, by: ctx.me }, `afegeix ${p}`);
+      const catV = botiga && cur === QUALSEVOL ? '' : cur;
+      if (ex) ctx.store.upsert(k, { id: ex.id, fet: false, ...(botiga && cur === QUALSEVOL ? {} : { cat: catV }), by: ctx.me }, `afegeix ${p}`);
+      else ctx.store.upsert(k, { id: uid(), text: p, cat: catV, fet: false, by: ctx.me }, `afegeix ${p}`);
     }
     setTxt('');
   };
   const toggle = (i) => ctx.store.upsert(k, { id: i.id, fet: !i.fet, vegades: !i.fet ? (i.vegades || 0) + 1 : i.vegades || 0, by: ctx.me }, `${i.fet ? 'torna a posar' : 'marca'} ${i.text}`);
   const buidaFets = () => { ctx.store.mutate(k, { t: 'delMany', ids: fets.filter((i) => (i.vegades || 0) < 2).map((i) => i.id) }, 'neteja la llista'); ctx.toast('Fets esborrats (es queden els habituals)'); };
-  const ultima = cats[cats.length - 1];
+  const ultima = botiga ? QUALSEVOL : cats[cats.length - 1];
   const grupDe = (i) => (cats.includes(i.cat) ? i.cat : ultima);
   const grups = cats.map((c) => [c, pend.filter((i) => grupDe(i) === c)]).filter(([, g]) => g.length);
   const col = (c) => (botiga ? colorBotiga(c) : 'var(--sec)');
   return html`<div>
     ${botiga && html`<div class="botigues" role="radiogroup" aria-label="Botiga">${cats.map((c) => html`<button type="button" role="radio" aria-checked=${c === cur} class=${'bchip' + (c === cur ? ' on' : '')} style=${{ '--c': col(c) }} onClick=${() => setCat(c)}>${c}<span>${pend.filter((i) => grupDe(i) === c).length || ''}</span></button>`)}</div>`}
     <form class="addbar" onSubmit=${afegir}>
-      <input value=${txt} onInput=${(e) => setTxt(e.target.value)} placeholder=${botiga ? `Afegeix a ${cur}…` : placeholder} aria-label=${placeholder} enterkeyhint="done" />
+      <input value=${txt} onInput=${(e) => setTxt(e.target.value)} placeholder=${botiga ? (cur === QUALSEVOL ? 'Afegeix (qualsevol botiga)…' : `Afegeix a ${cur}…`) : placeholder} aria-label=${placeholder} enterkeyhint="done" />
       ${!botiga && html`<select value=${cur} onChange=${(e) => setCat(e.target.value)} aria-label="Categoria">${cats.map((c) => html`<option value=${c}>${c}</option>`)}</select>`}
       <button class="btn primary" aria-label="Afegeix"><${Icon} n="plus" size=${18} /></button>
     </form>
@@ -93,7 +92,7 @@ function Llista({ k, cats, botiga, placeholder, buit, buitText }) {
 
 function ItemForm({ k, item, cats, botiga, onClose }) {
   const [f, set] = useForm({ ...item, nota: item.nota || '' });
-  const save = () => { ctx.store.upsert(k, { id: f.id, text: f.text, cat: f.cat, nota: f.nota }, `edita ${f.text}`); onClose(); };
+  const save = () => { ctx.store.upsert(k, { id: f.id, text: f.text, cat: botiga && f.cat === QUALSEVOL ? '' : f.cat, nota: f.nota }, `edita ${f.text}`); onClose(); };
   const del = () => { ctx.store.remove(k, f.id, `treu ${f.text}`); onClose(); };
   return html`<${Sheet} title="Edita" onClose=${onClose} actions=${html`<button class="btn ghost danger" onClick=${del}><${Icon} n="trash" size=${16} /> Esborra</button><button class="btn primary" onClick=${save}>Desa</button>`}>
     <${Field} label="Què"><input value=${f.text} onInput=${set('text')} /><//>

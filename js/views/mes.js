@@ -291,7 +291,7 @@ function BotiguesEditor() {
   const treu = (b) => { if (bs.length > 1) desa(bs.filter((x) => x !== b), `treu botiga ${b}`); };
   return html`<div class="card">
     <h3>Botigues de la compra</h3>
-    <p class="hint">La compra s'agrupa per aquestes botigues. L'última recull el que no tingui botiga.</p>
+    <p class="hint">La compra s'agrupa per aquestes botigues. El que no és d'una botiga concreta va a «Qualsevol botiga».</p>
     <ul class="items">${bs.map((b, i) => html`<li class="item">
       <span class="dot" style=${{ background: colorBotiga(b) }}></span><span class="item-txt">${b}</span>
       ${i > 0 && html`<button class="icon-btn sm" aria-label=${`Puja ${b}`} onClick=${() => mou(i, -1)}>↑</button>`}

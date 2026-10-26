@@ -99,7 +99,7 @@ export function demoSeed() {
       { id: uid(), nen: 'jana', tipus: 'fita', data: fa(60), text: 'Ha caminat sola fins a la porta', context: 'A casa', by: 'laia' },
       { id: uid(), nen: 'jana', tipus: 'frase', data: fa(5), text: 'Aigua! Més aigua!', context: 'La seva primera frase de dues paraules', by: 'pau' },
     ] },
-    'data/compra.json': { items: ['Llet', 'Plàtans', 'Pa de motlle', 'Iogurts', 'Bolquers'].map((t, i) => ({ id: uid(), text: t, cat: ['Mercadona', 'Mercat', 'Mercadona', 'Caprabo', 'Altres'][i], fet: false })) },
+    'data/compra.json': { items: ['Llet', 'Plàtans', 'Pa de motlle', 'Iogurts', 'Bolquers', 'Arròs'].map((t, i) => ({ id: uid(), text: t, cat: ['', 'Mercat', 'Mercadona', '', 'Mercadona', ''][i], fet: false })) },
     'data/casa.json': { items: [{ id: uid(), text: 'Bombeta del passadís', cat: 'Llar', fet: false }] },
     'data/regals.json': { items: [{ id: uid(), per: 'nil', ocasio: 'Nadal', idea: 'Bicicleta sense pedals', estat: 'idea' }] },
     'data/aniversaris.json': { items: [{ id: uid(), nom: 'Àvia Rosa', dia: addDaysYmd(ymd(avui), 3).slice(5), any: 1952, relacio: 'àvia' }, { id: uid(), nom: 'Nil', dia: '03-14', any: 2023, relacio: 'fill' }] },
