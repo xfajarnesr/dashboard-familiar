@@ -1,7 +1,7 @@
 // Ajunta totes les fonts del calendari en una llista d'ocurrències per dia
 import { ctx, colorDe, nomDe } from './ui.js';
 import { parseYmd, ymd, addDaysYmd, daysBetween } from './util.js';
-import { ocurrenciaAny } from './aniversaris.js';
+import { ocurrenciaAny, titolData, colorData, tipusDe } from './aniversaris.js';
 
 export const CATS = {
   familia: { nom: 'Família', color: '#3B4A5C' },
@@ -88,7 +88,7 @@ export function ocurrencies(from, to, { barca = true, femeni = false, docs = tru
     if (!a.dia) continue;
     for (let y = parseYmd(from).getFullYear(); y <= parseYmd(to).getFullYear(); y++) {
       const o = ocurrenciaAny(a, y);
-      push({ date: o.date, title: `Aniversari ${a.nom}${o.edat ? ` (${o.edat})` : ''}`, kind: 'aniv', color: '#E0457B', ref: a, sub: a.relacio });
+      push({ date: o.date, title: titolData(a, o.edat), kind: 'aniv', tipusData: tipusDe(a), color: colorData(a), ref: a, sub: a.relacio });
     }
   }
 

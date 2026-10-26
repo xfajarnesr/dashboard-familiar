@@ -1,7 +1,7 @@
 import { html, useState } from '../vendor/preact-htm.js';
 import { ctx, Icon, Sheet, Field, Seg, PersonPicker, Who, Empty, useForm, nomDe, colorDe } from '../ui.js';
 import { ymd, parseYmd, fmtData, fmtLlarg, daysBetween, uid, relatiu, lsGet, lsSet, MESOS, deMes } from '../util.js';
-import { proper, propers } from '../aniversaris.js';
+import { proper, propers, TIPUS_DATA, tipusDe, colorData, anysDe } from '../aniversaris.js';
 import { botigues, BOTIGUES_DEF, colorBotiga } from './llistes.js';
 import { SalutView, registres } from './salut.js';
 import { RecordsView } from './records.js';
@@ -21,7 +21,7 @@ export function MesView({ sub, onLogout }) {
   const ultReg = registres().find((r) => r.tipus === 'temp' || r.tipus === 'med');
   const nRecords = ctx.store.items('records').length;
   const tiles = [
-    ['aniversaris', 'cake', 'Aniversaris', pa.length ? `${pa[0].a.nom} ${pa[0].falten === 0 ? 'avui' : pa[0].falten === 1 ? 'demà' : `d'aquí a ${pa[0].falten} dies`}` : 'Els que no es poden oblidar', '#E0457B'],
+    ['aniversaris', 'cake', 'Aniversaris i sants', pa.length ? `${pa[0].a.nom} ${pa[0].falten === 0 ? 'avui' : pa[0].falten === 1 ? 'demà' : `d'aquí a ${pa[0].falten} dies`}` : 'Aniversaris, sants i altres dates', '#E0457B'],
     ['salut', 'heart', 'Salut dels nens', ultReg && Date.now() - new Date(ultReg.ts).getTime() < 48 * 3600e3 ? `Darrer registre: ${nomDe(ultReg.nen)}` : 'Febre, medicació, pes i talles', '#D93F5C'],
     ['records', 'quote', 'Frases i fites', nRecords ? `${nRecords} apuntades` : 'El que diuen i el que aprenen', '#E2A31B'],
     ['regals', 'gift', 'Idees de regals', regals ? `${regals} idees obertes` : 'Apunta-les quan surtin', '#F07F1E'],
@@ -98,14 +98,15 @@ function Aniversaris() {
   const as = ctx.store.items('aniversaris').filter((a) => a.dia).map((a) => ({ a, ...proper(a, avui) })).sort((x, y) => x.falten - y.falten);
   const quan = (n) => (n === 0 ? 'avui' : n === 1 ? 'demà' : n < 7 ? `d'aquí a ${n} dies` : null);
   return html`<section class="view sec-mes">
-    <${Back} title="Aniversaris"><button class="btn primary sm" onClick=${() => setEdit({ id: null, nom: '', dia: '', any: '', relacio: '', notes: '' })}><${Icon} n="plus" size=${16} /> Afegeix</button><//>
-    <p class="hint">Surten al calendari cada any, i a la pantalla d'Avui la setmana abans.</p>
+    <${Back} title="Aniversaris i sants"><button class="btn primary sm" onClick=${() => setEdit({ id: null, tipus: 'aniversari', nom: '', dia: '', any: '', relacio: '', notes: '' })}><${Icon} n="plus" size=${16} /> Afegeix</button><//>
+    <p class="hint">Aniversaris, sants i qualsevol data que es repeteixi cada any (no cal l'any). Surten al calendari, i a Avui la setmana abans.</p>
     ${as.length === 0 && html`<${Empty} title="Encara no n'hi ha cap" text="Comenceu pels de casa, els avis i els padrins." />`}
     <ul class="anivs">${as.map(({ a, date, edat, falten }) => {
       const d = parseYmd(date);
-      return html`<li class=${'aniv' + (falten <= 7 ? ' aviat' : '')} onClick=${() => setEdit(a)}>
+      const c = colorData(a), t = tipusDe(a), e = anysDe(a, edat);
+      return html`<li class=${'aniv' + (falten <= 7 ? ' aviat' : '')} style=${{ '--ac': c }} onClick=${() => setEdit(a)}>
         <span class="aniv-date"><b>${d.getDate()}</b><small>${MESOS[d.getMonth()].slice(0, 3)}</small></span>
-        <span class="aniv-body"><b>${a.nom}</b><small class="muted">${[a.relacio, edat ? (falten === 0 ? `fa ${edat} anys` : `en farà ${edat}`) : null].filter(Boolean).join(' · ')}</small></span>
+        <span class="aniv-body"><b>${a.nom}</b><small class="muted">${[t !== 'aniversari' ? TIPUS_DATA[t].nom : null, a.relacio, e ? (falten === 0 ? `fa ${e} anys` : `en farà ${e}`) : null].filter(Boolean).join(' · ')}</small></span>
         ${quan(falten) ? html`<span class="tag hot">${quan(falten)}</span>` : html`<span class="muted small">${falten} dies</span>`}
       </li>`;
     })}</ul>
@@ -120,19 +121,20 @@ function AnivForm({ a, onClose }) {
     const d = Number(f.diaN), m = Number(f.mes);
     if (!f.nom.trim() || !d || d > 31) return ctx.toast('Posa el nom i el dia');
     const { mes, diaN, ...rest } = f;
-    const item = { ...rest, id: f.id || uid(), nom: f.nom.trim(), dia: `${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`, any: f.any ? Number(f.any) : null };
-    ctx.store.upsert('aniversaris', item, `aniversari de ${item.nom}`);
+    const item = { ...rest, tipus: tipusDe(f), id: f.id || uid(), nom: f.nom.trim(), dia: `${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`, any: f.any && tipusDe(f) !== 'sant' ? Number(f.any) : null };
+    ctx.store.upsert('aniversaris', item, `${TIPUS_DATA[item.tipus].nom.toLowerCase()}: ${item.nom}`);
     onClose();
   };
-  const del = () => { ctx.store.remove('aniversaris', f.id, `treu aniversari de ${f.nom}`); onClose(); };
+  const del = () => { ctx.store.remove('aniversaris', f.id, `treu ${TIPUS_DATA[tipusDe(f)].nom.toLowerCase()}: ${f.nom}`); onClose(); };
   const idea = () => { onClose(); ctx.nav('mes/regals'); };
-  return html`<${Sheet} title=${a.id ? a.nom : 'Nou aniversari'} onClose=${onClose}
+  return html`<${Sheet} title=${a.id ? a.nom : 'Nova data anual'} onClose=${onClose}
     actions=${html`${a.id && html`<button class="btn ghost danger" onClick=${del}><${Icon} n="trash" size=${16} /> Esborra</button>`}<button class="btn primary" onClick=${save}>Desa</button>`}>
-    <${Field} label="Qui"><input value=${f.nom} onInput=${set('nom')} placeholder="Àvia Montse" /><//>
+    <${Field} label="Què és"><div class="chips">${Object.entries(TIPUS_DATA).map(([k, v]) => html`<button type="button" class=${'chip' + (tipusDe(f) === k ? ' on' : '')} style=${{ '--c': v.color }} onClick=${() => setF((x) => ({ ...x, tipus: k }))}>${v.nom}</button>`)}</div><//>
+    <${Field} label=${TIPUS_DATA[tipusDe(f)].qui}><input value=${f.nom} onInput=${set('nom')} placeholder=${TIPUS_DATA[tipusDe(f)].ph} /><//>
     <div class="row3">
       <${Field} label="Dia"><input inputmode="numeric" value=${f.diaN} onInput=${set('diaN')} placeholder="14" /><//>
       <${Field} label="Mes"><select value=${f.mes} onChange=${set('mes')}>${MESOS.map((m, i) => html`<option value=${i + 1}>${m}</option>`)}</select><//>
-      <${Field} label="Any (opcional)"><input inputmode="numeric" value=${f.any} onInput=${set('any')} placeholder="1958" /><//>
+      ${tipusDe(f) !== 'sant' && html`<${Field} label="Any (opcional)"><input inputmode="numeric" value=${f.any} onInput=${set('any')} placeholder="1958" /><//>`}
     </div>
     <${Field} label="Relació" hint="Per exemple: àvia, cosí, amic de l'Ícar."><input value=${f.relacio} onInput=${set('relacio')} /><//>
     <${Field} label="Notes"><input value=${f.notes} onInput=${set('notes')} placeholder="Li agraden les plantes…" /><//>

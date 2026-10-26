@@ -1,4 +1,4 @@
-// Aniversaris: { id, nom, dia: 'MM-DD', any: 1985 | null, relacio, notes }
+// Dates anuals: { id, nom, dia: 'MM-DD', any: 1985 | null, relacio, notes, tipus: 'aniversari' (per defecte) | 'sant' | 'altra' }
 import { ctx } from './ui.js';
 import { ymd, parseYmd, daysBetween } from './util.js';
 
@@ -6,6 +6,22 @@ function dataAny(dia, y) {
   let [m, d] = dia.split('-').map(Number);
   if (m === 2 && d === 29 && !(y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0))) d = 28;
   return ymd(new Date(y, m - 1, d));
+}
+
+export const TIPUS_DATA = {
+  aniversari: { nom: 'Aniversari', color: '#E0457B', qui: 'Qui', ph: 'Àvia Montse' },
+  sant: { nom: 'Sant', color: '#E2A31B', qui: 'Qui fa el sant', ph: 'Maria' },
+  altra: { nom: 'Altra data', color: '#2F6FDB', qui: 'Què', ph: 'Aniversari de casament' },
+};
+export const tipusDe = (a) => (TIPUS_DATA[a.tipus] ? a.tipus : 'aniversari');
+export const colorData = (a) => TIPUS_DATA[tipusDe(a)].color;
+// Edat/anys: no té sentit en un sant
+export const anysDe = (a, edat) => (tipusDe(a) === 'sant' ? null : edat);
+export function titolData(a, edat) {
+  const t = tipusDe(a), e = anysDe(a, edat);
+  if (t === 'sant') return `Sant de ${a.nom}`;
+  if (t === 'altra') return `${a.nom}${e ? ` (${e})` : ''}`;
+  return `Aniversari ${a.nom}${e ? ` (${e})` : ''}`;
 }
 
 // Ocurrència d'un aniversari en un any concret, amb l'edat que fa

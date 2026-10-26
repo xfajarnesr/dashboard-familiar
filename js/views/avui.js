@@ -8,7 +8,7 @@ import { ocurrencies, senseEscola } from '../calendar.js';
 import { OcList, EventForm } from './agenda.js';
 import { TascaRow, categoritza, colorBotiga, tascaVisible } from './llistes.js';
 import { estatDoc, partitsBarca, Partit } from './mes.js';
-import { propers } from '../aniversaris.js';
+import { propers, titolData, tipusDe, anysDe } from '../aniversaris.js';
 import { avisosSalut } from './salut.js';
 import { recordsAvui } from './records.js';
 
@@ -74,7 +74,7 @@ export function AvuiView() {
   // Avisos
   const avisos = [...avisosSalut()];
   for (const x of propers(7)) {
-    avisos.push({ cls: 'aniv', txt: `Aniversari de ${x.a.nom} ${x.falten === 0 ? 'avui' : x.falten === 1 ? 'demà' : relatiu(x.date)}${x.edat ? ` (${x.edat})` : ''}`, go: 'mes/aniversaris' });
+    avisos.push({ cls: 'aniv', txt: `${tipusDe(x.a) === 'aniversari' ? `Aniversari de ${x.a.nom}` : titolData(x.a, null)} ${x.falten === 0 ? 'avui' : x.falten === 1 ? 'demà' : relatiu(x.date)}${anysDe(x.a, x.edat) ? ` (${anysDe(x.a, x.edat)})` : ''}`, go: 'mes/aniversaris' });
   }
   for (const d of ctx.store.items('documents')) {
     const e = estatDoc(d);
