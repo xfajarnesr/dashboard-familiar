@@ -21,7 +21,7 @@ Amb el compte `xfajarnesr`:
 1. Ves a **Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token** (enllaç directe: https://github.com/settings/personal-access-tokens/new).
 2. **Token name:** `Casa`. **Expiration:** el màxim que et deixi (1 any). Apunta a l'app una tasca per renovar-lo.
 3. **Repository access:** *Only select repositories* → `dashboard-familiar-dades`.
-4. **Permissions → Repository permissions → Contents:** *Read and write*. Res més.
+4. **Permissions:** de tota la llista, només cal tocar **Contents** i posar-lo a *Read and write* (és per ordre alfabètic, després de *Commit statuses*). Si la pantalla mostra un botó *Add permissions*, prem-lo, busca *Contents*, afegeix-lo i canvia *Read-only* per *Read and write*. *Metadata: Read-only* s'hi afegeix sol, i està bé. La resta, deixa-ho com està.
 5. **Generate token** i copia'l (comença per `github_pat_`). GitHub només te l'ensenya un cop.
 
 ### 2. Connecta cada dispositiu
