@@ -1,7 +1,7 @@
 // Salut dels nens: registre (temperatura, medicació, símptomes, visites), creixement (pes, alçada, talles)
 // i fitxes de medicaments amb la dosi que us han indicat. L'app no calcula dosis: només les recorda.
 import { html, useState } from '../vendor/preact-htm.js';
-import { ctx, Icon, Sheet, Field, Seg, Who, Empty, useForm, nomDe, colorDe } from '../ui.js';
+import { ctx, Icon, Sheet, Field, Seg, Who, Empty, useForm, nomDe, colorDe, naixDe } from '../ui.js';
 import { ymd, parseYmd, fmtLlarg, fmtData, uid, lsGet, lsSet, edat, ara, addDaysYmd, daysBetween } from '../util.js';
 import { PROSPECTES, dosiProspecte, liniaFila, fmtMl, dosiUnica } from '../prospectes.js';
 
@@ -26,7 +26,7 @@ export function ultimPes(nenId) {
   return m ? { kg: Number(m.pes), data: m.data, dies: daysBetween(m.data, ymd()) } : null;
 }
 function mesosDe(nenId) {
-  const nx = ctx.membres.find((m) => m.id === nenId)?.naixement;
+  const nx = naixDe(nenId);
   if (!nx) return null;
   const a = parseYmd(nx), b = new Date();
   return (b.getFullYear() - a.getFullYear()) * 12 + b.getMonth() - a.getMonth() - (b.getDate() < a.getDate() ? 1 : 0);
@@ -101,7 +101,7 @@ export function SalutView({ Back }) {
   return html`<section class="view sec-salut">
     <${Back} title="Salut dels nens" />
     <div class="nens" role="radiogroup" aria-label="Nen">${ns.map((x) => html`<button role="radio" aria-checked=${x.id === n.id} class=${'nen' + (x.id === n.id ? ' on' : '')} style=${{ '--c': x.color }} onClick=${() => setNen(x.id)}>
-      <b>${x.nom}</b><small>${x.naixement ? edat(x.naixement) : x.curs || ''}</small></button>`)}</div>
+      <b>${x.nom}</b><small>${naixDe(x.id) ? edat(naixDe(x.id)) : x.curs || ''}</small></button>`)}</div>
     <${Seg} value=${tab} onChange=${setTab} options=${[{ value: 'registre', label: 'Registre' }, { value: 'creixement', label: 'Pes i talles' }, { value: 'meds', label: 'Medicaments' }]} />
     ${tab === 'registre' && html`<${Registre} key=${n.id} n=${n} />`}
     ${tab === 'creixement' && html`<${Creixement} key=${n.id} n=${n} />`}
@@ -221,7 +221,7 @@ function Creixement({ n }) {
   const serie = (k) => ms.filter((m) => m[k] != null && m[k] !== '').map((m) => ({ d: m.data, v: Number(m[k]) })).reverse();
   return html`<div>
     <div class="card creix">
-      ${ms[0] && html`<p class="small muted">Darrera mesura: ${fmtData(ms[0].data)}${n.naixement ? ` (${edat(n.naixement, ms[0].data)})` : ''}</p>`}
+      ${ms[0] && html`<p class="small muted">Darrera mesura: ${fmtData(ms[0].data)}${naixDe(n.id) ? ` (${edat(naixDe(n.id), ms[0].data)})` : ''}</p>`}
       <div class="creix-grid">${CAMPS.map(([k, nom, u]) => {
         const m = ultim(ms, k);
         return html`<div class="creix-v"><small>${nom}</small><b>${m ? `${typeof m[k] === 'number' ? fmtNum(m[k], 2) : m[k]}${u ? ` ${u}` : ''}` : '—'}</b>${m && m.data !== ms[0].data && html`<small class="muted">${fmtData(m.data)}</small>`}</div>`;

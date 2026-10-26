@@ -141,7 +141,7 @@ function AnivForm({ a, onClose }) {
 }
 
 // ---------- Documents ----------
-const TIPUS_DOC = ['DNI', 'Passaport', 'Targeta sanitària', 'Carnet de conduir', 'Targeta de família nombrosa', 'ITV del cotxe', 'Assegurança del cotxe', 'Assegurança de la llar', 'Revisió de la caldera', 'Altres'];
+const TIPUS_DOC = ['DNI', 'Passaport', 'Visa', 'Targeta sanitària', 'Carnet de conduir', 'Targeta de família nombrosa', 'ITV del cotxe', 'Assegurança del cotxe', 'Assegurança de la llar', 'Revisió de la caldera', 'Altres'];
 export function estatDoc(d) {
   if (!d.caducitat) return { cls: 'ok', txt: 'sense data' };
   const n = daysBetween(ymd(), d.caducitat);
@@ -157,7 +157,7 @@ function Documents() {
   return html`<section class="view sec-mes">
     <${Back} title="Documents"><button class="btn primary sm" onClick=${() => setEdit({ id: null, tipus: 'DNI', persona: ctx.me, caducitat: '', notes: '' })}><${Icon} n="plus" size=${16} /> Afegeix</button><//>
     <p class="hint">Només el tipus i la data de caducitat. No hi poseu números de document: avisarem a 90, 30 i 7 dies.</p>
-    ${ds.length === 0 && html`<${Empty} title="Encara no hi ha cap document" text="Comenceu pels DNI, passaports i targetes sanitàries de tots quatre." action=${html`<div class="chips">${['DNI', 'Passaport', 'Targeta sanitària', 'ITV del cotxe'].map((t) => html`<button class="chip" onClick=${() => setEdit({ id: null, tipus: t, persona: ctx.me, caducitat: '', notes: '' })}>+ ${t}</button>`)}</div>`} />`}
+    ${ds.length === 0 && html`<${Empty} title="Encara no hi ha cap document" text="Comenceu pels DNI, passaports i targetes sanitàries de tots quatre." action=${html`<div class="chips">${['DNI', 'Passaport', 'Visa', 'Targeta sanitària', 'ITV del cotxe'].map((t) => html`<button class="chip" onClick=${() => setEdit({ id: null, tipus: t, persona: ctx.me, caducitat: '', notes: '' })}>+ ${t}</button>`)}</div>`} />`}
     <ul class="items docs">${ds.map((d) => {
       const e = estatDoc(d);
       return html`<li class=${'item doc ' + e.cls} onClick=${() => setEdit(d)}>
@@ -171,7 +171,9 @@ function Documents() {
 
 function DocForm({ d, onClose }) {
   const [f, set, setF] = useForm({ ...d, notes: d.notes || '' });
+  const [altres, setAltres] = useState(!!d.tipus && !TIPUS_DOC.slice(0, -1).includes(d.tipus));
   const save = () => {
+    if (!f.tipus.trim()) return ctx.toast('Tria el tipus de document');
     if (!f.caducitat) return ctx.toast('Posa la data de caducitat');
     ctx.store.upsert('documents', { ...f, id: f.id || uid() }, `document: ${f.tipus}`);
     onClose();
@@ -179,8 +181,9 @@ function DocForm({ d, onClose }) {
   const del = () => { ctx.store.remove('documents', f.id, `treu document: ${f.tipus}`); onClose(); };
   return html`<${Sheet} title=${d.id ? 'Document' : 'Nou document'} onClose=${onClose}
     actions=${html`${d.id && html`<button class="btn ghost danger" onClick=${del}><${Icon} n="trash" size=${16} /> Esborra</button>`}<button class="btn primary" onClick=${save}>Desa</button>`}>
-    <${Field} label="Tipus"><select value=${TIPUS_DOC.includes(f.tipus) ? f.tipus : 'Altres'} onChange=${set('tipus')}>${TIPUS_DOC.map((t) => html`<option>${t}</option>`)}</select>
-      ${!TIPUS_DOC.slice(0, -1).includes(f.tipus) && html`<input value=${f.tipus === 'Altres' ? '' : f.tipus} onInput=${(e) => setF((x) => ({ ...x, tipus: e.target.value || 'Altres' }))} placeholder="Quin document?" />`}<//>
+    <${Field} label="Tipus"><div class="chips">${TIPUS_DOC.slice(0, -1).map((t) => html`<button type="button" class=${'chip' + (f.tipus === t && !altres ? ' on' : '')} onClick=${() => { setAltres(false); setF((x) => ({ ...x, tipus: t })); }}>${t}</button>`)}
+      <button type="button" class=${'chip' + (altres ? ' on' : '')} onClick=${() => { setAltres(true); setF((x) => ({ ...x, tipus: TIPUS_DOC.slice(0, -1).includes(x.tipus) ? '' : x.tipus })); }}>Altres</button></div>
+      ${altres && html`<input value=${f.tipus} onInput=${set('tipus')} placeholder="Quin document?" />`}<//>
     <${Field} label="De qui"><${PersonPicker} value=${f.persona} onChange=${(v) => setF((x) => ({ ...x, persona: v }))} /><//>
     <${Field} label="Caduca el"><input type="date" value=${f.caducitat} onInput=${set('caducitat')} /><//>
     <${Field} label="Notes" hint="Per exemple: on es renova o si cal cita prèvia. Sense números."><input value=${f.notes} onInput=${set('notes')} /><//>

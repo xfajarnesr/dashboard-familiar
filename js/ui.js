@@ -10,6 +10,15 @@ export function colorDe(id) {
   if (id === 'tots' || id === 'familia') return 'var(--ink)';
   return membre(id)?.color || 'var(--muted)';
 }
+// Data de naixement d'un membre: la de la configuració o, si no n'hi ha, la dels aniversaris (mateix nom)
+export function naixDe(id) {
+  const m = membre(id);
+  if (!m) return '';
+  if (m.naixement) return m.naixement;
+  const norm = (t) => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+  const a = ctx.store?.items('aniversaris').find((x) => x.any && x.dia && norm(x.nom) === norm(m.nom));
+  return a ? `${a.any}-${a.dia}` : '';
+}
 export function nomDe(id) {
   if (id === 'tots' || id === 'familia') return 'Tots';
   return membre(id)?.nom || id;

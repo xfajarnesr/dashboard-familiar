@@ -1,11 +1,11 @@
 // Racó de frases i fites dels nens: què han dit i què han après, amb l'edat que tenien.
 import { html, useState } from '../vendor/preact-htm.js';
-import { ctx, Icon, Sheet, Field, Seg, Who, Empty, useForm, nomDe, colorDe } from '../ui.js';
+import { ctx, Icon, Sheet, Field, Seg, Who, Empty, useForm, nomDe, colorDe, naixDe } from '../ui.js';
 import { ymd, parseYmd, fmtData, uid, edat, MESOS_CAP, lsGet, lsSet } from '../util.js';
 
 const TIPUS = { frase: 'Frase', fita: 'Fita' };
 const nens = () => ctx.membres.filter((m) => !m.adult);
-const naix = (id) => ctx.membres.find((m) => m.id === id)?.naixement;
+const naix = naixDe;
 
 // "Avui fa un any…": records del mateix dia d'anys anteriors, per als avisos d'Avui
 export function recordsAvui() {
@@ -41,7 +41,7 @@ export function RecordsView({ Back }) {
         ${r.context && html`<p class="muted small">${r.context}</p>`}
         <p class="rec-peu"><span class="dot" style=${{ background: colorDe(r.nen) }}></span>${nomDe(r.nen)}${naix(r.nen) ? `, ${edat(naix(r.nen), r.data)}` : ''} · ${fmtData(r.data)}</p>
       </li>`)}</ul></div>`)}
-    ${ns.length > 0 && !ns.some((n) => n.naixement) && rs.length > 0 && html`<p class="hint">Si poses la data de naixement dels nens a Ajustos → Família, cada record mostrarà l'edat que tenien.</p>`}
+    ${ns.length > 0 && !ns.some((n) => naixDe(n.id)) && rs.length > 0 && html`<p class="hint">Si poses la data de naixement dels nens a Ajustos → Família, cada record mostrarà l'edat que tenien.</p>`}
     ${edit && html`<${RecordForm} r=${edit} onClose=${() => setEdit(null)} />`}
   </section>`;
 }
