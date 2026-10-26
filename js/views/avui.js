@@ -126,6 +126,10 @@ export function AvuiView() {
     ${!plaDia && html`<button class="btn sm soft" onClick=${() => ctx.nav('menjar/setmana')}><${Icon} n="spark" size=${15} /> Proposa sopars</button>`}
   <//>`;
 
+  const onEs = html`<${Card} sec="horari" icon="clock" title="On és cadascú" link="Horaris" onLink=${() => ctx.nav('agenda/horaris')} cls="ribbon-card">
+      <${DayRibbon} date=${dObj} ymdStr=${dia} />
+      <${ResumHorari} date=${dObj} ymdStr=${dia} />
+    <//>`;
   return html`<section class="view avui">
     <header class=${'hero ' + cel(kindDia, esAvui)}>
       <div class="hero-top">
@@ -150,7 +154,9 @@ export function AvuiView() {
       </div>
     </header>
 
-    ${ocsDia.length > 0 && agenda}
+    ${ocsDia.length > 0 ? agenda : onEs}
+
+    ${ocsDia.length > 0 && onEs}
 
     <div class="grid2">
       ${menjar}
@@ -158,11 +164,6 @@ export function AvuiView() {
         ${tasques.length ? html`<ul class="items">${tasques.slice(0, 7).map((t) => html`<${TascaRow} t=${t} />`)}</ul>` : html`<p class="muted small">Cap tasca per ${quin}.</p>`}
       <//>
     </div>
-
-    <${Card} sec="horari" icon="clock" title="On és cadascú" link="Horaris" onLink=${() => ctx.nav('agenda/horaris')} cls="ribbon-card">
-      <${DayRibbon} date=${dObj} ymdStr=${dia} />
-      <${ResumHorari} date=${dObj} ymdStr=${dia} />
-    <//>
 
     <div class="grid2">
       ${ocsDia.length === 0 && agenda}
