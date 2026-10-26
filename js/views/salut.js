@@ -2,7 +2,8 @@
 // i fitxes de medicaments amb la dosi que us han indicat. L'app no calcula dosis: només les recorda.
 import { html, useState } from '../vendor/preact-htm.js';
 import { ctx, Icon, Sheet, Field, Seg, Who, Empty, useForm, nomDe, colorDe } from '../ui.js';
-import { ymd, parseYmd, fmtLlarg, fmtData, uid, lsGet, lsSet, edat, ara, addDaysYmd } from '../util.js';
+import { ymd, parseYmd, fmtLlarg, fmtData, uid, lsGet, lsSet, edat, ara, addDaysYmd, daysBetween } from '../util.js';
+import { PROSPECTES, dosiProspecte, liniaFila, fmtMl, dosiUnica } from '../prospectes.js';
 
 export const TIPUS_REG = {
   temp: { nom: 'Temperatura', icon: 'thermo' },
@@ -18,6 +19,18 @@ const items = (k, nen) => ctx.store.items('salut').filter((x) => x.k === k && (!
 export const registres = (nen) => items('reg', nen).sort((a, b) => b.ts.localeCompare(a.ts));
 const mesures = (nen) => items('mesura', nen).sort((a, b) => b.data.localeCompare(a.data));
 const meds = (nen) => items('med', nen).sort((a, b) => (b.actiu !== false) - (a.actiu !== false) || a.nom.localeCompare(b.nom));
+
+// Darrer pes apuntat d'un nen (de «Pes i talles»)
+export function ultimPes(nenId) {
+  const m = mesures(nenId).find((x) => x.pes != null && x.pes !== '');
+  return m ? { kg: Number(m.pes), data: m.data, dies: daysBetween(m.data, ymd()) } : null;
+}
+function mesosDe(nenId) {
+  const nx = ctx.membres.find((m) => m.id === nenId)?.naixement;
+  if (!nx) return null;
+  const a = parseYmd(nx), b = new Date();
+  return (b.getFullYear() - a.getFullYear()) * 12 + b.getMonth() - a.getMonth() - (b.getDate() < a.getDate() ? 1 : 0);
+}
 
 const minDes = (ts) => Math.round((Date.now() - new Date(ts).getTime()) / 60000);
 export function fa(ts) {
@@ -141,7 +154,8 @@ function RegForm({ r, n, onClose }) {
   const ms = meds(n.id).filter((m) => m.actiu !== false || m.id === f.medId);
   const med = ms.find((m) => m.id === f.medId);
   const e = med && !r.id ? estatMed(med) : null;
-  const triaMed = (m) => setF((x) => ({ ...x, medId: m ? m.id : '', medNom: m ? m.nom : '', dosi: m ? m.dosi || '' : x.dosi }));
+  const kg = ultimPes(n.id)?.kg;
+  const triaMed = (m) => setF((x) => ({ ...x, medId: m ? m.id : '', medNom: m ? m.nom : '', dosi: m ? (m.prospecte ? dosiUnica(m.prospecte, kg) : m.dosi || '') : x.dosi }));
   const save = () => {
     if (!f.ts) return;
     if (f.tipus === 'temp' && num(f.temp) == null) return ctx.toast('Escriu la temperatura');
@@ -165,6 +179,7 @@ function RegForm({ r, n, onClose }) {
         ${!f.medId && html`<input value=${f.medNom} onInput=${set('medNom')} placeholder="Nom del medicament" />`}
       <//>
       <${Field} label="Dosi donada" hint=${med?.dosi ? `La que teniu apuntada per a ${n.nom}: ${med.dosi}${med.interval ? `, cada ${med.interval} h` : ''}.` : ''}><input value=${f.dosi} onInput=${set('dosi')} placeholder="ml, mg…" /><//>
+      ${med?.prospecte && !r.id && html`<${DosiProspecte} m=${med} n=${n} />`}
       ${e && e.aviat && html`<p class="hint warn-txt">L'última presa de ${med.nom} va ser ${fa(e.ult.ts)} (${hora(e.ult.ts)}). L'interval que teniu apuntat és de ${med.interval} h: la següent, ${e.seg}.</p>`}
       ${e && e.massa && html`<p class="hint late">Ja porta ${e.en24} preses en 24 h, el màxim que teniu apuntat.</p>`}`}
     <${Field} label=${['temp', 'med'].includes(f.tipus) ? 'Nota (opcional)' : 'Descripció'}><textarea rows="2" value=${f.text} onInput=${set('text')} placeholder=${f.tipus === 'visita' ? 'Pediatre: otitis, tornar d\'aquí a 10 dies' : f.tipus === 'vacuna' ? 'Quina vacuna i on' : f.tipus === 'temp' ? 'Axil·lar, rectal, després del bany…' : 'Tos, mocs, vòmit, no menja…'}></textarea><//>
@@ -244,22 +259,52 @@ function MesuraForm({ m, n, onClose }) {
   <//>`;
 }
 
+// Quadre amb la dosi que diu el prospecte per al darrer pes del nen
+export function DosiProspecte({ m, n }) {
+  const pr = PROSPECTES[m.prospecte];
+  if (!pr) return null;
+  const pes = ultimPes(n.id);
+  const d = dosiProspecte(pr.id, pes?.kg);
+  const mesos = mesosDe(n.id);
+  const petit = pr.id === 'dalsy' ? (mesos == null || mesos < 24) : (mesos == null || mesos < 36);
+  return html`<div class="dosi-prosp">
+    <p class="dp-cap">Segons el prospecte de ${pr.nom}</p>
+    ${d.estat === 'sensePes' && html`<p>Apunta el pes de ${n.nom} a <b>Pes i talles</b> i aquí hi sortirà la dosi del prospecte.</p>`}
+    ${(d.estat === 'no' || d.estat === 'fora') && html`<p class="late">${d.text}</p>`}
+    ${pes && d.files && html`<p class="muted small">Amb ${String(pes.kg).replace('.', ',')} kg (pesat el ${fmtData(pes.data)}):</p>`}
+    ${d.estat === 'exacte' && html`<p class="dp-dosi">${fmtMl(d.files[0][2], d.files[0][3])} <small>per presa · màxim ${String(d.files[0][4]).replace('.', ',')} ml en 24 h</small></p><p class="small muted">${liniaFila(pr.id, d.files[0])}</p>`}
+    ${d.estat === 'entre' && html`<p class="small">El pes de ${n.nom} no és cap de les files del prospecte. Les dues més properes són:</p>
+      <ul class="dp-files">${d.files.map((f) => html`<li>${liniaFila(pr.id, f)}</li>`)}</ul>
+      <p class="small muted">Confirmeu la dosi amb el pediatre o el farmacèutic.</p>`}
+    ${d.estat === 'tram' && html`<p class="dp-dosi">${fmtMl(d.files[0][2])} <small>per presa · cada 6 h</small></p><p class="small muted">${liniaFila(pr.id, d.files[0])}</p>`}
+    ${pes && pes.dies > 45 && html`<p class="small warn-txt">El darrer pes és de fa ${pes.dies} dies: torneu a pesar ${n.nom}.</p>`}
+    <p class="small muted">${pr.resum}</p>
+    <ul class="dp-avisos">${pr.avisos.map((a, i) => html`<li class=${i === 1 && pr.id === 'dalsy' && petit ? 'late' : i === 0 && pr.id === 'apiretal' && petit ? 'warn-txt' : ''}>${a}</li>`)}</ul>
+    <p class="small muted">Si el pediatre us ha indicat una altra dosi, mana la seva. <a href=${pr.url} target="_blank" rel="noopener" onClick=${(e) => e.stopPropagation()}>Prospecte oficial (AEMPS)</a></p>
+  </div>`;
+}
+
 // ---------- Medicaments ----------
 function Medicaments({ n }) {
   const [edit, setEdit] = useState(null);
   const ms = meds(n.id);
   const pes = ultim(mesures(n.id), 'pes');
+  const afegeixBasic = (pr) => ctx.store.upsert('salut', { id: `med-${pr.id}-${n.id}`, k: 'med', nen: n.id, nom: pr.nom, prospecte: pr.id, dosi: '', interval: pr.intervalH, maxDia: pr.preses, pesRef: null, nota: `${pr.actiu} · ${pr.envas}`, actiu: true, by: ctx.me }, `salut ${n.nom}: ${pr.nom.split(' ')[0]}`);
   return html`<div>
-    <p class="hint">Apunta la dosi que us ha indicat el pediatre o la del prospecte per al pes de ${n.nom}. L'app no calcula res: només la recorda i us diu quan es va donar l'última.</p>
-    <button class="btn primary" onClick=${() => setEdit({ id: null, nom: '', dosi: '', interval: '', maxDia: '', pesRef: pes?.pes ?? '', nota: '', actiu: true })}><${Icon} n="plus" size=${16} /> Medicament</button>
+    <p class="hint">Dalsy i Apiretal porten la dosi del prospecte oficial per al darrer pes de ${n.nom}. Per a qualsevol altre medicament, apunteu la dosi que us hagi indicat el pediatre: l'app la recorda i us diu quan es va donar l'última.</p>
+    <div class="btnrow">
+      ${Object.values(PROSPECTES).filter((pr) => !ms.some((m) => m.prospecte === pr.id)).map((pr) => html`<button class="btn" onClick=${() => afegeixBasic(pr)}><${Icon} n="plus" size=${16} /> ${pr.nom.split(' ')[0]}</button>`)}
+      <button class="btn primary" onClick=${() => setEdit({ id: null, nom: '', dosi: '', interval: '', maxDia: '', pesRef: pes?.pes ?? '', nota: '', actiu: true })}><${Icon} n="plus" size=${16} /> Un altre medicament</button>
+    </div>
     ${ms.length === 0 && html`<${Empty} title="Cap medicament apuntat" text="L'antitèrmic de casa, l'antibiòtic d'ara, el xarop de la tos… cadascun amb la seva dosi." />`}
     <ul class="meds">${ms.map((m) => {
       const e = estatMed(m);
-      const revisa = m.pesRef && pes?.pes && Math.abs(pes.pes - m.pesRef) / m.pesRef >= 0.1;
+      const revisa = !m.prospecte && m.pesRef && pes?.pes && Math.abs(pes.pes - m.pesRef) / m.pesRef >= 0.1;
       return html`<li class=${'med' + (m.actiu === false ? ' inactiu' : '')} onClick=${() => setEdit(m)}>
         <div class="med-top"><b>${m.nom}</b>${m.actiu === false && html`<span class="tag">Arxivat</span>`}</div>
-        <p>${m.dosi || 'Sense dosi apuntada'}${m.interval ? ` · cada ${m.interval} h` : ''}${m.maxDia ? ` · màx. ${m.maxDia} en 24 h` : ''}</p>
-        ${m.nota && html`<p class="muted small">${m.nota}</p>`}
+        ${m.prospecte ? html`<p class="muted small">${m.nota || ''}${m.interval ? ` · cada ${m.interval} h` : ''}${m.maxDia ? ` · ${m.maxDia} preses al dia` : ''}</p>` : html`<p>${m.dosi || 'Sense dosi apuntada'}${m.interval ? ` · cada ${m.interval} h` : ''}${m.maxDia ? ` · màx. ${m.maxDia} en 24 h` : ''}</p>`}
+        ${m.prospecte && m.actiu !== false && html`<${DosiProspecte} m=${m} n=${n} />`}
+        ${m.nota && !m.prospecte && html`<p class="muted small">${m.nota}</p>`}
         ${revisa && html`<p class="small warn-txt">Dosi apuntada amb ${fmtNum(m.pesRef, 2)} kg i ara pesa ${fmtNum(pes.pes, 2)} kg: reviseu-la amb el pediatre o el prospecte.</p>`}
         ${e && html`<p class="small muted">Última presa ${fa(e.ult.ts)} (${fmtLlarg(e.ult.ts.slice(0, 10))}, ${hora(e.ult.ts)}).</p>`}
       </li>`;
@@ -272,7 +317,7 @@ function MedForm({ m, n, onClose }) {
   const [f, set] = useForm({ ...m, dosi: m.dosi || '', interval: m.interval ?? '', maxDia: m.maxDia ?? '', pesRef: m.pesRef ?? '', nota: m.nota || '', actiu: m.actiu !== false });
   const save = () => {
     if (!f.nom.trim()) return;
-    ctx.store.upsert('salut', { id: f.id || uid(), k: 'med', nen: n.id, nom: f.nom.trim(), dosi: f.dosi.trim(), interval: num(f.interval), maxDia: num(f.maxDia), pesRef: num(f.pesRef), nota: f.nota.trim(), actiu: !!f.actiu, by: f.by || ctx.me }, `salut ${n.nom}: medicament ${f.nom.trim()}`);
+    ctx.store.upsert('salut', { id: f.id || uid(), k: 'med', nen: n.id, prospecte: f.prospecte || null, nom: f.nom.trim(), dosi: f.dosi.trim(), interval: num(f.interval), maxDia: num(f.maxDia), pesRef: num(f.pesRef), nota: f.nota.trim(), actiu: !!f.actiu, by: f.by || ctx.me }, `salut ${n.nom}: medicament ${f.nom.trim()}`);
     onClose();
   };
   const del = () => { if (confirm(`Esborrar ${f.nom}? Les preses apuntades es queden al registre.`)) { ctx.store.remove('salut', f.id, `salut ${n.nom}: esborra medicament`); onClose(); } };

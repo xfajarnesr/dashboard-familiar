@@ -3,7 +3,7 @@ import { ctx, Icon, WeatherIcon, nomDe } from '../ui.js';
 import { ymd, parseYmd, addDaysYmd, fmtLlarg, DIES_CURTS, monthKey, MESOS, uid, relatiu, norm } from '../util.js';
 import { getMeteo, descMeteo } from '../meteo.js';
 import { DayRibbon, ResumHorari } from './horaris.js';
-import { DinarNens, SoparLine, menuDia } from './menjar.js';
+import { DinarNens, SoparLine, menuDia, dinarsFora } from './menjar.js';
 import { ocurrencies, senseEscola } from '../calendar.js';
 import { OcList, EventForm } from './agenda.js';
 import { TascaRow, categoritza, colorBotiga, tascaVisible } from './llistes.js';
@@ -120,7 +120,7 @@ export function AvuiView() {
   <//>`;
 
   const menjar = html`<${Card} sec="menjar" icon="menjar" title="Menjar" link="Setmana" onLink=${() => ctx.nav('menjar/setmana')}>
-    ${menuDia(dia) ? html`<p class="lbl">Dinar a l'escola</p><${DinarNens} d=${dia} />` : html`<p class="muted small">${senseEscola(dia) ? `Sense menjador (${senseEscola(dia)}).` : 'Sense menú de menjador per a aquest dia.'}</p>`}
+    ${menuDia(dia) || dinarsFora(dia).length ? html`<p class="lbl">Dinar</p><${DinarNens} d=${dia} />` : html`<p class="muted small">${senseEscola(dia) ? `Sense menjador (${senseEscola(dia)}).` : 'Sense menú de menjador per a aquest dia.'}</p>`}
     <p class="lbl">Sopar</p><${SoparLine} d=${dia} />
     ${plaDia?.motius?.length && !plaDia.fixat ? html`<p class="motius">${plaDia.motius[0]}.</p>` : ''}
     ${!plaDia && html`<button class="btn sm soft" onClick=${() => ctx.nav('menjar/setmana')}><${Icon} n="spark" size=${15} /> Proposa sopars</button>`}

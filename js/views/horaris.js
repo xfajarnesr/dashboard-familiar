@@ -8,14 +8,21 @@ export const diaDe = (date) => { const g = date.getDay(); return g === 0 ? 7 : g
 
 // Franges d'una persona per a un dia de la setmana. Si es passa la data (AAAA-MM-DD), també hi entren
 // les franges puntuals d'aquell dia (camp `data`, p. ex. les tardes rotatòries) i se n'eliminen les
-// marcades `nomesEscola` (portar els nens) quan cap dels nens té escola.
+// marcades `nomesEscola` quan no hi ha escola: per a un adult, quan cap dels nens hi va (portar-los);
+// per a un nen, quan ell no hi va.
 export function blocsDe(persona, dia, ymdStr) {
   const nens = ctx.membres.filter((m) => !m.adult);
-  const hiHaEscola = !ymdStr || !nens.length || nens.some((n) => !senseEscola(ymdStr, n.id));
+  const m = ctx.membres.find((x) => x.id === persona);
+  const hiHaEscola = !ymdStr || !nens.length || (m && !m.adult ? !senseEscola(ymdStr, persona) : nens.some((n) => !senseEscola(ymdStr, n.id)));
   return ctx.store.items('horaris').filter((b) => b.persona === persona
       && (b.data ? b.data === ymdStr : Number(b.dia) === dia)
       && (!b.nomesEscola || hiHaEscola))
     .sort((a, b) => a.inici.localeCompare(b.inici));
+}
+// Si aquest nen dina fora de l'escola aquell dia (amb els avis…), retorna la franja (amb `amb`); si no, null.
+export function dinarFora(persona, ymdStr) {
+  if (senseEscola(ymdStr, persona)) return null;
+  return blocsDe(persona, diaDe(parseYmd(ymdStr)), ymdStr).find((b) => b.dinar) || null;
 }
 // Franges puntuals (amb data) d'una persona, de la més propera a la més llunyana
 export function puntualsDe(persona, desDe) {
@@ -28,9 +35,9 @@ export function franges(blocs) {
   const out = [];
   for (const b of blocs) {
     const last = out[out.length - 1];
-    const sol = (x) => x.variable || x.nens || x.data;
+    const sol = (x) => x.variable || x.nens || x.data || x.amb;
     if (last && !sol(b) && !sol(last) && hhmmToMin(b.inici) - hhmmToMin(last.fi) <= 30) { last.fi = b.fi; last.items.push(b); }
-    else out.push({ id: b.id, inici: b.inici, fi: b.fi, variable: b.variable, nens: b.nens, puntual: !!b.data, text: sol(b) ? b.text : null, items: [b] });
+    else out.push({ id: b.id, inici: b.inici, fi: b.fi, variable: b.variable, nens: b.nens, amb: b.amb, puntual: !!b.data, text: sol(b) ? b.text : null, items: [b] });
   }
   return out;
 }
@@ -62,7 +69,7 @@ export function DayRibbon({ date, ymdStr, compact }) {
         <div class="ribbon-track">
           ${hores.map((h) => html`<i class="tick" style=${{ left: `${((h * 60 - H0) / span) * 100}%` }}></i>`)}
           ${blocs.length === 0 && html`<span class="ribbon-free">${ll || 'Sense horari'}</span>`}
-          ${franges(blocs).map((b) => html`<button class=${'blk' + (b.variable ? ' var' : '') + (b.nens ? ' nens' : '') + (b.puntual ? ' puntual' : '') + (sel === b.id ? ' sel' : '')}
+          ${franges(blocs).map((b) => html`<button class=${'blk' + (b.variable ? ' var' : '') + (b.nens ? ' nens' : '') + (b.amb ? ' amb' : '') + (b.puntual ? ' puntual' : '') + (sel === b.id ? ' sel' : '')}
               style=${{ left: pct(b.inici), width: `calc(${pct(b.fi)} - ${pct(b.inici)})`, '--c': m.color }}
               title=${b.items.map((x) => `${x.inici}–${x.fi} ${x.text}`).join('\n')} aria-label=${`${m.nom} ${b.inici}–${b.fi}`} onClick=${() => setSel(sel === b.id ? null : b.id)}></button>`)}
           ${esAvui && nowMin > H0 && nowMin < H1 && html`<i class="now" style=${{ left: `${((nowMin - H0) / span) * 100}%` }}></i>`}
@@ -130,7 +137,7 @@ function EditorPersona({ persona, onEdit }) {
       return html`<div class="hor-dia">
         <h4>${DIA_NOMS[d]}</h4>
         ${bl.length === 0 && html`<p class="muted small">Res</p>`}
-        ${bl.map((b) => html`<button class="hor-blk" style=${{ '--c': m.color }} onClick=${() => onEdit(b)}><span>${b.inici}–${b.fi}</span> ${b.text}${b.variable ? html` <em>variable</em>` : ''}</button>`)}
+        ${bl.map((b) => html`<button class="hor-blk" style=${{ '--c': m.color }} onClick=${() => onEdit(b)}><span>${b.inici}–${b.fi}</span> ${b.text}${b.variable ? html` <em>variable</em>` : ''}${b.dinar ? html` <em>hi dina</em>` : ''}</button>`)}
       </div>`;
     })}
     <button class="btn" onClick=${() => onEdit({ id: null, persona, dia: 1, inici: '09:00', fi: '10:00', text: '' })}><${Icon} n="plus" size=${16} /> Afegeix franja</button>
@@ -145,9 +152,11 @@ function EditorPersona({ persona, onEdit }) {
 function BlocForm({ bloc, onClose }) {
   const [f, set, setF] = useForm({ ...bloc, dia: String(bloc.dia || 1), data: bloc.data || '' });
   const puntual = !!f.data;
+  const esAdult = !!ctx.membres.find((x) => x.id === f.persona)?.adult;
   const save = () => {
     if (!f.inici || !f.fi) return;
     const item = { ...f, id: f.id || uid() };
+    if (!item.amb) { item.amb = null; item.dinar = false; } else item.amb = item.amb.trim();
     if (puntual) { item.dia = diaDe(parseYmd(f.data)); } else { item.dia = Number(f.dia); item.data = null; }
     ctx.store.upsert('horaris', item, `horari de ${f.persona}`);
     onClose();
@@ -162,6 +171,8 @@ function BlocForm({ bloc, onClose }) {
     <div class="row2"><${Field} label="Inici"><input type="time" value=${f.inici} onInput=${set('inici')} /><//><${Field} label="Final"><input type="time" value=${f.fi} onInput=${set('fi')} /><//></div>
     <${Field} label="Què és"><input value=${f.text} onInput=${set('text')} placeholder="Classe, reunió, escola…" /><//>
     ${!puntual && html`<label class="check"><input type="checkbox" checked=${!!f.variable} onChange=${set('variable')} /> Franja variable (no cada setmana igual)</label>`}
-    ${!puntual && html`<label class="check"><input type="checkbox" checked=${!!f.nomesEscola} onChange=${set('nomesEscola')} /> Només els dies que hi ha escola (portar o recollir els nens)</label>`}
+    ${!esAdult && html`<${Field} label="Amb qui (si no és a l'escola)" hint="Avis, iaia…  Surt a l'horari i, si hi dina, al lloc del menú d'escola."><input value=${f.amb || ''} onInput=${set('amb')} placeholder="la iaia Lali, els avis…" /><//>
+      <label class="check"><input type="checkbox" checked=${!!f.dinar} onChange=${set('dinar')} /> Hi dina (aquell dia no es mostra el menú d'escola)</label>`}
+    ${!puntual && esAdult && html`<label class="check"><input type="checkbox" checked=${!!f.nomesEscola} onChange=${set('nomesEscola')} /> Només els dies que hi ha escola (portar o recollir els nens)</label>`}
   <//>`;
 }

@@ -38,8 +38,16 @@ export function demoSeed() {
     if (dia === 1 || dia === 3) blocs.push({ id: uid(), persona: 'pau', dia, inici: '08:30', fi: '09:30', text: 'Porta els nens', nens: true, nomesEscola: true });
     else blocs.push({ id: uid(), persona: 'laia', dia, inici: '08:30', fi: '09:30', text: 'Porta els nens', nens: true, nomesEscola: true });
     if (dia !== 5) blocs.push({ id: uid(), persona: 'laia', dia, inici: dia === 1 ? '10:30' : '09:00', fi: '16:30', text: 'Escola' });
-    blocs.push({ id: uid(), persona: 'nil', dia, inici: '09:00', fi: '16:30', text: 'Escola' });
-    blocs.push({ id: uid(), persona: 'jana', dia, inici: '09:00', fi: '16:00', text: 'Llar d\'infants' });
+    if (dia === 4) {
+      blocs.push({ id: uid(), persona: 'nil', dia, inici: '09:00', fi: '12:30', text: 'Escola' });
+      blocs.push({ id: uid(), persona: 'nil', dia, inici: '12:30', fi: '15:00', text: 'Dinar amb els avis', amb: 'els avis', dinar: true });
+      blocs.push({ id: uid(), persona: 'nil', dia, inici: '15:00', fi: '16:30', text: 'Escola' });
+    } else blocs.push({ id: uid(), persona: 'nil', dia, inici: '09:00', fi: '16:30', text: 'Escola' });
+    if (dia === 1) blocs.push({ id: uid(), persona: 'nil', dia, inici: '16:30', fi: '18:00', text: 'Amb la iaia Rosa', amb: 'la iaia Rosa' });
+    if (dia === 3) {
+      blocs.push({ id: uid(), persona: 'jana', dia, inici: '09:00', fi: '12:00', text: 'Llar d\'infants' });
+      blocs.push({ id: uid(), persona: 'jana', dia, inici: '12:00', fi: '18:00', text: 'Amb la iaia Rosa', amb: 'la iaia Rosa', dinar: true });
+    } else blocs.push({ id: uid(), persona: 'jana', dia, inici: '09:00', fi: '16:00', text: 'Llar d\'infants' });
   }
   // tardes rotatòries d'en Pau: dies concrets (aquesta setmana i d'aquí a dues)
   for (const n of [2, 18, 30]) {
@@ -71,6 +79,9 @@ export function demoSeed() {
     ] },
     'data/salut.json': { items: [
       { id: 'med1', k: 'med', nen: 'nil', nom: 'Antitèrmic (exemple)', dosi: 'La que us indiqui el pediatre', interval: 6, maxDia: 4, pesRef: 14.2, nota: 'Exemple: poseu-hi la vostra', actiu: true, by: 'laia' },
+      { id: 'med-dalsy-nil', k: 'med', nen: 'nil', nom: 'Dalsy 40 mg/ml', prospecte: 'dalsy', dosi: '', interval: null, maxDia: 3, nota: 'ibuprofè · suspensió oral', actiu: true, by: 'laia' },
+      { id: 'med-apiretal-nil', k: 'med', nen: 'nil', nom: 'Apiretal 100 mg/ml', prospecte: 'apiretal', dosi: '', interval: 6, maxDia: 4, nota: 'paracetamol · solució oral', actiu: true, by: 'laia' },
+      { id: 'med-apiretal-jana', k: 'med', nen: 'jana', nom: 'Apiretal 100 mg/ml', prospecte: 'apiretal', dosi: '', interval: 6, maxDia: 4, nota: 'paracetamol · solució oral', actiu: true, by: 'laia' },
       { id: uid(), k: 'reg', nen: 'nil', tipus: 'temp', ts: tsFa(3.2), temp: 38.4, text: '', by: 'laia' },
       { id: uid(), k: 'reg', nen: 'nil', tipus: 'med', ts: tsFa(3), medId: 'med1', medNom: 'Antitèrmic (exemple)', dosi: 'dosi apuntada', text: '', by: 'laia' },
       { id: uid(), k: 'reg', nen: 'nil', tipus: 'temp', ts: tsFa(1), temp: 37.4, text: 'Ja dorm', by: 'pau' },

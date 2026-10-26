@@ -60,6 +60,18 @@ No és xifrat: totes les dades són al mateix repo i tots dos hi teniu accés. S
 
 A *Agenda → Horaris → Editar horaris*, cada persona té franges setmanals i **dies concrets**. Una franja d'un dia concret (com les tardes rotatòries) només surt aquell dia a la cinta d'*On és cadascú* i marca el dia amb un punt al calendari. Les franges setmanals es poden marcar *Només els dies que hi ha escola*: és el cas de portar els nens, que desapareix sola els festius, les vacances i els caps de setmana.
 
+### Els nens amb els avis
+
+A *Agenda → Horaris → Editar horaris → (nen)* cada franja d'un nen pot tenir **Amb qui** (la iaia Lali, els avis…). Si hi marques **Hi dina**, aquell dia el menú d'escola d'aquell nen desapareix d'*Avui* i de *Menjar* i en lloc seu hi surt «amb la iaia Lali». El seu dinar tampoc no compta per a l'equilibri de proteïnes dels sopars. Als festius, vacances i caps de setmana no hi surt res.
+
+### Dalsy i Apiretal
+
+A *Salut dels nens → Medicaments*, Dalsy 40 mg/ml i Apiretal 100 mg/ml porten la dosi del **prospecte oficial (AEMPS/CIMA)** per al darrer pes apuntat a *Pes i talles*, amb els avisos d'edat del mateix prospecte. L'app no calcula dosis pròpies: si el pes no coincideix amb cap fila del prospecte, ensenya les dues files veïnes. Les taules són a `js/prospectes.js`; si canvia el prospecte, s'han de revisar allà.
+
+### Pujar de versió
+
+`node tools/versiona.mjs 7` canvia d'un sol cop index.html (fulls, main.js i import map), i sw.js. No ho feu a mà: si queda un fitxer amb una versió diferent, el mòbil pot quedar-se a «Carregant…».
+
 ### Tema
 
 *Ajustos → Aparença*: automàtic (segueix el mòbil), clar o fosc. Es guarda en cada dispositiu.

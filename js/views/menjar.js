@@ -3,6 +3,7 @@ import { ctx, Icon, Sheet, Field, Seg, useForm, Empty, nomDe } from '../ui.js';
 import { ymd, parseYmd, addDaysYmd, startOfWeek, fmtCurt, fmtLlarg, DIES, MESOS_CAP, monthKey, uid, norm } from '../util.js';
 import { PROTEINES, OBJECTIU, COMPLEMENTS, proposaSetmana, proteinaSopar, components, equilibriSetmana } from '../sopars.js';
 import { categoritza } from './llistes.js';
+import { dinarFora } from './horaris.js';
 
 export const NENS = () => ctx.membres.filter((m) => m.escola);
 
@@ -12,10 +13,22 @@ export function menuMes(mk) {
 export function menuDia(d) {
   return menuMes(d.slice(0, 7))?.dies?.[d] || null;
 }
+// El menú d'un dia sense els nens que no dinen a l'escola (amb els avis…): no compten per a l'equilibri de proteïnes.
+export function menuEfectiu(d) {
+  const m = menuDia(d);
+  if (!m) return null;
+  const r = {};
+  for (const [id, x] of Object.entries(m)) if (!dinarFora(id, d)) r[id] = x;
+  return Object.keys(r).length ? r : null;
+}
 function menusRang(dies) {
   const r = {};
-  for (const d of dies) { const m = menuDia(d); if (m) r[d] = m; }
+  for (const d of dies) { const m = menuEfectiu(d); if (m) r[d] = m; }
   return r;
+}
+// Nens que aquell dia dinen fora de l'escola: [{ nen, amb }]
+export function dinarsFora(d) {
+  return NENS().map((n) => ({ nen: n, b: dinarFora(n.id, d) })).filter((x) => x.b).map((x) => ({ nen: x.nen, amb: x.b.amb || 'fora' }));
 }
 export function platDe(entry) {
   if (!entry) return null;
@@ -39,12 +52,16 @@ function VHP({ c }) {
 export function DinarNens({ d, curt }) {
   const m = menuDia(d);
   const nens = NENS();
-  if (!m) return html`<p class="muted small">Sense menú d'escola</p>`;
+  const fora = dinarsFora(d);
+  if (!m && !fora.length) return html`<p class="muted small">Sense menú d'escola</p>`;
+  const color = (n) => `color-mix(in srgb, ${n.color} 75%, var(--ink))`;
   return html`<div class="dinars">${nens.map((n) => {
-    const x = m[n.id];
+    const f = fora.find((x) => x.nen.id === n.id);
+    if (f) return html`<div class="dinar fora"><span class="dinar-who" style=${{ color: color(n) }}>${n.nom}</span> <span class="dinar-amb">amb ${f.amb}</span></div>`;
+    const x = m?.[n.id];
     if (!x) return null;
-    return html`<div class="dinar"><span class="dinar-who" style=${{ color: `color-mix(in srgb, ${n.color} 75%, var(--ink))` }}>${n.nom}</span>
-      <span class="dinar-plats">${curt ? x.plats.join(' · ') : x.plats.join(' · ')}</span> <${ProtChip} t=${x.proteina} /></div>`;
+    return html`<div class="dinar"><span class="dinar-who" style=${{ color: color(n) }}>${n.nom}</span>
+      <span class="dinar-plats">${x.plats.join(' · ')}</span> <${ProtChip} t=${x.proteina} /></div>`;
   })}</div>`;
 }
 

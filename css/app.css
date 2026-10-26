@@ -560,3 +560,17 @@ input + input, .chips + input { margin-top: .4rem; }
 .hor-dia.puntuals .btn { margin-top: .3rem; }
 .logo { display: block; flex: none; }
 .setup-card .logo { margin-bottom: .6rem; }
+
+/* ---------- v6: nens amb els avis ---------- */
+.blk.amb { background: repeating-linear-gradient(90deg, color-mix(in srgb, var(--c) 28%, var(--surface)) 0 7px, color-mix(in srgb, var(--c) 14%, var(--surface)) 7px 14px); box-shadow: inset 0 0 0 1.5px var(--c); }
+.dinar.fora .dinar-amb { font-weight: 700; color: var(--ink-2); }
+.dinar.fora .dinar-amb::before { content: '🏠 '; }
+
+.dosi-prosp { margin-top: .6rem; padding: .7rem .8rem; border-radius: var(--r); background: color-mix(in srgb, var(--sec) 7%, var(--surface)); border: 1px solid color-mix(in srgb, var(--sec) 25%, var(--line)); }
+.dosi-prosp p { margin: 0 0 .35rem; }
+.dp-cap { font-size: .8rem; font-weight: 700; color: color-mix(in srgb, var(--sec) 75%, var(--ink)); text-transform: uppercase; letter-spacing: .03em; }
+.dp-dosi { font-family: var(--display); font-size: 1.5rem; font-weight: 700; }
+.dp-dosi small { font-family: var(--font); font-size: .85rem; font-weight: 400; color: var(--muted); }
+.dp-files, .dp-avisos { margin: 0 0 .4rem; padding-left: 1.1rem; font-size: .88rem; }
+.dp-avisos li { margin-bottom: .15rem; }
+.dosi-prosp a { color: inherit; }
