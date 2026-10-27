@@ -1,4 +1,6 @@
 // Previsió amb Open-Meteo (gratuït, sense clau)
+import { html, useState, useEffect } from './vendor/preact-htm.js';
+import { ctx } from './ui.js';
 import { lsGet, lsSet } from './util.js';
 
 const WMO = {
@@ -18,13 +20,13 @@ export function descMeteo(code) {
 }
 
 export async function getMeteo(lat, lon) {
-  const k = `df.meteo.${lat},${lon}`;
+  const k = `df.meteo2.${lat},${lon}`;
   const c = lsGet(k);
   if (c && Date.now() - c.at < 30 * 60 * 1000) return c.data;
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
-    '&current=temperature_2m,weather_code,is_day,precipitation' +
-    '&hourly=temperature_2m,precipitation_probability,weather_code' +
-    '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset' +
+    '&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,is_day,precipitation,wind_speed_10m,wind_gusts_10m' +
+    '&hourly=temperature_2m,apparent_temperature,precipitation_probability,precipitation,weather_code,wind_speed_10m,is_day' +
+    '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,wind_speed_10m_max,uv_index_max,sunrise,sunset' +
     '&timezone=Europe%2FMadrid&forecast_days=7';
   try {
     const r = await fetch(url);
@@ -35,4 +37,12 @@ export async function getMeteo(lat, lon) {
   } catch {
     return c ? c.data : null;
   }
+}
+
+export function useMeteo() {
+  const cfg = ctx.store.get('config');
+  const lat = cfg?.ubicacio?.lat ?? 41.632, lon = cfg?.ubicacio?.lon ?? 2.168;
+  const [m, setM] = useState(null);
+  useEffect(() => { getMeteo(lat, lon).then(setM); }, [lat, lon]);
+  return m;
 }

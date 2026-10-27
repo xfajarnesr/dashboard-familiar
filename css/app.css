@@ -577,3 +577,62 @@ input + input, .chips + input { margin-top: .4rem; }
 .dp-files, .dp-avisos { margin: 0 0 .4rem; padding-left: 1.1rem; font-size: .88rem; }
 .dp-avisos li { margin-bottom: .15rem; }
 .dosi-prosp a { color: inherit; }
+
+/* ---- Temps amb detall ---- */
+.hero-wx { border: 0; font: inherit; color: inherit; text-align: left; cursor: pointer; display: flex; align-items: center; gap: .5rem; }
+.hero-wx:hover { background: rgb(255 255 255 / .24); }
+.hero-wx small { display: block; }
+.hero-wx .mm { font-weight: 800; letter-spacing: .01em; }
+.hero-wx > svg:last-child { opacity: .8; }
+.dc-w > span { display: flex; align-items: baseline; }
+.dc-min { opacity: .7; font-size: .66rem; font-weight: 600; }
+.sec-meteo { --sec: #2D8CF0; }
+.mt-dies { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: .3rem; margin-bottom: 1rem; }
+.mt-dia { display: flex; flex-direction: column; align-items: center; gap: .05rem; padding: .45rem .1rem; border: 1.5px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--ink); font-weight: 700; cursor: pointer; font-size: .72rem; min-width: 0; }
+.mt-dia b { font-size: .95rem; font-family: var(--display); }
+.mt-dia small { color: var(--muted); font-size: .72rem; }
+.mt-dia em { font-style: normal; font-size: .68rem; color: #2F6FDB; font-weight: 800; min-height: 1em; }
+.mt-dia.on { border-color: #2D8CF0; background: color-mix(in srgb, #2D8CF0 12%, var(--surface)); }
+.mt-cap { display: flex; align-items: center; gap: .9rem; flex-wrap: wrap; }
+.mt-quan { margin: 0; color: var(--muted); font-weight: 700; font-size: .85rem; }
+.mt-desc { margin: 0; font-family: var(--display); font-size: 1.3rem; font-weight: 700; }
+.mt-mm { margin: .1rem 0 0; font-size: 1.15rem; }
+.mt-mm small { color: var(--muted); }
+.mt-ara-t { margin-left: auto; text-align: right; }
+.mt-ara-t span { font-family: var(--display); font-size: 2.4rem; font-weight: 650; line-height: 1; display: block; }
+.mt-ara-t small { color: var(--muted); }
+.mt-pluja { margin: .8rem 0 .6rem; font-weight: 700; }
+.mt-dades { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(6.2rem, 1fr)); gap: .5rem; }
+.mt-dades li { background: color-mix(in srgb, var(--ink) 5%, var(--surface)); border-radius: 12px; padding: .45rem .6rem; display: flex; flex-direction: column; }
+.mt-dades small { color: var(--muted); font-size: .72rem; font-weight: 700; }
+.mt-dades b { font-size: 1.05rem; }
+.mt-hores h3, .mt-setmana h3 { margin: 0 0 .4rem; }
+.mt-leg { margin: 0 0 .3rem; font-size: .78rem; color: var(--muted); display: flex; align-items: center; gap: .35rem; flex-wrap: wrap; }
+.mt-leg .l1 { width: 1.1rem; height: 3px; background: #E4572E; border-radius: 3px; }
+.mt-leg .l2 { width: .7rem; height: .7rem; background: color-mix(in srgb, #2F6FDB 35%, transparent); border-radius: 2px; margin-left: .5rem; }
+.mt-graf { width: 100%; height: auto; display: block; }
+.mt-grid { stroke: var(--line); stroke-width: 1; }
+.mt-eix { fill: var(--muted); font-size: 10px; font-weight: 700; }
+.mt-barra { fill: color-mix(in srgb, #2F6FDB 35%, transparent); }
+.mt-linia { fill: none; stroke: #E4572E; stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+.mt-ara { stroke: var(--ink); stroke-width: 1; stroke-dasharray: 3 3; opacity: .6; }
+.mt-strip { display: flex; gap: .35rem; overflow-x: auto; padding: .6rem 0 .4rem; scroll-snap-type: x proximity; }
+.mt-h { flex: none; width: 3.6rem; display: flex; flex-direction: column; align-items: center; gap: .05rem; padding: .4rem 0; border-radius: 12px; border: 1.5px solid transparent; scroll-snap-align: start; }
+.mt-h small { color: var(--muted); font-size: .7rem; font-weight: 700; }
+.mt-h b { font-family: var(--display); }
+.mt-h.on { border-color: #2D8CF0; background: color-mix(in srgb, #2D8CF0 10%, var(--surface)); }
+.mt-h.past { opacity: .55; }
+.mt-p { font-size: .75rem; font-weight: 800; color: var(--muted); }
+.mt-p.alt { color: #2F6FDB; }
+.mt-mmh { min-height: 1em; }
+.mt-v { font-size: .68rem !important; }
+.mt-v::after { content: ' km/h'; font-size: .55rem; }
+.mt-setmana ul { list-style: none; margin: 0; padding: 0; }
+.mt-setmana li { display: grid; grid-template-columns: 5.4rem 1.6rem 2.6rem 2rem 1fr 2rem; align-items: center; gap: .4rem; padding: .45rem .3rem; border-radius: 10px; cursor: pointer; }
+.mt-setmana li.on { background: color-mix(in srgb, #2D8CF0 10%, var(--surface)); }
+.mt-sd { font-weight: 700; }
+.mt-sp { color: #2F6FDB; font-weight: 800; font-size: .8rem; text-align: right; }
+.mt-smin { color: var(--muted); text-align: right; }
+.mt-smax { font-weight: 800; }
+.mt-rang { position: relative; height: 6px; border-radius: 6px; background: color-mix(in srgb, var(--ink) 10%, transparent); }
+.mt-rang i { position: absolute; top: 0; bottom: 0; border-radius: 6px; background: linear-gradient(90deg, #49B3F5, #F7C548); }

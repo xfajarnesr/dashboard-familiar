@@ -8,6 +8,7 @@ import { AgendaView } from './views/agenda.js';
 import { MenjarView } from './views/menjar.js';
 import { LlistesView } from './views/llistes.js';
 import { MesView } from './views/mes.js';
+import { MeteoView } from './views/meteo.js';
 
 // Valors per defecte del repo de dades (es poden canviar a la pantalla de connexió)
 const DEFAULT_REPO = 'xfajarnesr/dashboard-familiar-dades';
@@ -23,7 +24,7 @@ const NAV = [
 function parseHash() {
   const h = location.hash.replace(/^#\/?/, '');
   const [view, sub] = h.split('/');
-  return { view: NAV.some((n) => n[0] === view) ? view : 'avui', sub: sub || null };
+  return { view: NAV.some((n) => n[0] === view) || view === 'meteo' ? view : 'avui', sub: sub || null };
 }
 
 function makeStore(conn) {
@@ -133,13 +134,14 @@ function App() {
   return html`<div class="shell">
     <nav class="nav" aria-label="Seccions">
       <div class="brand"><${Logo} size=${30} /><span>Casa</span></div>
-      ${NAV.map(([k, ic, label]) => html`<a href=${`#/${k}`} class=${(view === k ? 'on ' : '') + 'nav-' + k} aria-current=${view === k ? 'page' : null}><${Icon} n=${ic} size=${22} /><span>${label}</span></a>`)}
+      ${NAV.map(([k, ic, label]) => html`<a href=${`#/${k}`} class=${((view === k || (view === 'meteo' && k === 'avui')) ? 'on ' : '') + 'nav-' + k} aria-current=${view === k ? 'page' : null}><${Icon} n=${ic} size=${22} /><span>${label}</span></a>`)}
       <div class="nav-foot"><${SyncBadge} /></div>
     </nav>
     <div class="topbar"><${SyncBadge} /></div>
     ${store.status === 'auth' && html`<div class="banner err">${store.error} <button class="linkbtn" onClick=${() => ctx.nav('mes/ajustos')}>Ajustos</button></div>`}
     <main class="main">
       ${view === 'avui' && html`<${AvuiView} />`}
+      ${view === 'meteo' && html`<${MeteoView} sub=${sub} />`}
       ${view === 'agenda' && html`<${AgendaView} sub=${sub} />`}
       ${view === 'menjar' && html`<${MenjarView} sub=${sub} />`}
       ${view === 'llistes' && html`<${LlistesView} sub=${sub} />`}

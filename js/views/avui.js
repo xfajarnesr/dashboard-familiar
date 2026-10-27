@@ -1,7 +1,7 @@
 import { html, useState, useEffect } from '../vendor/preact-htm.js';
 import { ctx, Icon, WeatherIcon, nomDe } from '../ui.js';
 import { ymd, parseYmd, addDaysYmd, fmtLlarg, DIES_CURTS, monthKey, MESOS, uid, relatiu, norm } from '../util.js';
-import { getMeteo, descMeteo } from '../meteo.js';
+import { useMeteo, descMeteo } from '../meteo.js';
 import { DayRibbon, ResumHorari } from './horaris.js';
 import { DinarNens, SoparLine, menuDia, dinarsFora } from './menjar.js';
 import { ocurrencies, senseEscola } from '../calendar.js';
@@ -11,14 +11,6 @@ import { estatDoc, partitsBarca, Partit } from './mes.js';
 import { propers, titolData, tipusDe, anysDe } from '../aniversaris.js';
 import { avisosSalut } from './salut.js';
 import { recordsAvui } from './records.js';
-
-function useMeteo() {
-  const cfg = ctx.store.get('config');
-  const lat = cfg?.ubicacio?.lat ?? 41.632, lon = cfg?.ubicacio?.lon ?? 2.168;
-  const [m, setM] = useState(null);
-  useEffect(() => { getMeteo(lat, lon).then(setM); }, [lat, lon]);
-  return m;
-}
 
 function salutacio() {
   const h = new Date().getHours();
@@ -137,9 +129,13 @@ export function AvuiView() {
           <p class="hello">${salutacio()}${ctx.me ? `, ${nomDe(ctx.me)}` : ''}</p>
           <h1>${fmtLlarg(dia).replace(/^\w/, (c) => c.toUpperCase())}</h1>
         </div>
-        ${meteo && (esAvui && cur
-          ? html`<div class="hero-wx"><${WeatherIcon} kind=${kindDia} day=${cur.is_day} size=${56} /><div><span class="temp">${Math.round(cur.temperature_2m)}°</span><small>${descMeteo(cur.weather_code)[0]}${iDia >= 0 ? ` · ${Math.round(daily.temperature_2m_min[iDia])}°/${Math.round(daily.temperature_2m_max[iDia])}°` : ''}${iDia >= 0 && daily.precipitation_probability_max[iDia] >= 20 ? ` · pluja ${daily.precipitation_probability_max[iDia]}%` : ''}</small></div></div>`
-          : iDia >= 0 && html`<div class="hero-wx"><${WeatherIcon} kind=${kindDia} size=${56} /><div><span class="temp">${Math.round(daily.temperature_2m_max[iDia])}°</span><small>${descMeteo(daily.weather_code[iDia])[0]} · mín. ${Math.round(daily.temperature_2m_min[iDia])}°${daily.precipitation_probability_max[iDia] >= 20 ? ` · pluja ${daily.precipitation_probability_max[iDia]}%` : ''}</small></div></div>`)}
+        ${meteo && iDia >= 0 && html`<button class="hero-wx" onClick=${() => ctx.nav('meteo/' + dia)} aria-label="Veure el temps amb detall">
+          <${WeatherIcon} kind=${kindDia} day=${esAvui && cur ? cur.is_day : true} size=${56} />
+          <div><span class="temp">${esAvui && cur ? Math.round(cur.temperature_2m) : Math.round(daily.temperature_2m_max[iDia])}°</span>
+            <small>${descMeteo(esAvui && cur ? cur.weather_code : daily.weather_code[iDia])[0]}${daily.precipitation_probability_max[iDia] >= 20 ? ` · pluja ${daily.precipitation_probability_max[iDia]}%` : ''}</small>
+            <small class="mm">mín. ${Math.round(daily.temperature_2m_min[iDia])}° / màx. ${Math.round(daily.temperature_2m_max[iDia])}°</small></div>
+          <${Icon} n="right" size=${18} />
+        </button>`}
       </div>
       <div class="daystrip" role="tablist" aria-label="Dies">
         ${dies.map((d, i) => {
@@ -147,7 +143,7 @@ export function AvuiView() {
           return html`<button role="tab" aria-selected=${d === dia} class=${'dchip' + (d === dia ? ' on' : '') + (lliure && lliure !== 'cap de setmana' ? ' festa' : '')} onClick=${() => setDia(d)}>
             <span class="dc-d">${i === 0 ? 'Avui' : i === 1 ? 'Demà' : DIES_CURTS[x.getDay()]}</span>
             <span class="dc-n">${x.getDate()}</span>
-            ${w >= 0 ? html`<span class="dc-w"><${WeatherIcon} kind=${descMeteo(daily.weather_code[w])[1]} size=${22} />${Math.round(daily.temperature_2m_max[w])}°</span>` : html`<span class="dc-w"></span>`}
+            ${w >= 0 ? html`<span class="dc-w"><${WeatherIcon} kind=${descMeteo(daily.weather_code[w])[1]} size=${22} /><span>${Math.round(daily.temperature_2m_max[w])}°<span class="dc-min">/${Math.round(daily.temperature_2m_min[w])}°</span></span></span>` : html`<span class="dc-w"></span>`}
             <span class="dc-dots">${Array.from({ length: Math.min(n, 3) }, () => html`<i></i>`)}</span>
           </button>`;
         })}
