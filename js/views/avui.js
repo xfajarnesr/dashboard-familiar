@@ -143,7 +143,7 @@ export function AvuiView() {
           return html`<button role="tab" aria-selected=${d === dia} class=${'dchip' + (d === dia ? ' on' : '') + (lliure && lliure !== 'cap de setmana' ? ' festa' : '')} onClick=${() => setDia(d)}>
             <span class="dc-d">${i === 0 ? 'Avui' : i === 1 ? 'Demà' : DIES_CURTS[x.getDay()]}</span>
             <span class="dc-n">${x.getDate()}</span>
-            ${w >= 0 ? html`<span class="dc-w"><${WeatherIcon} kind=${descMeteo(daily.weather_code[w])[1]} size=${22} /><span>${Math.round(daily.temperature_2m_max[w])}°<span class="dc-min">/${Math.round(daily.temperature_2m_min[w])}°</span></span></span>` : html`<span class="dc-w"></span>`}
+            ${w >= 0 ? html`<span class="dc-w"><${WeatherIcon} kind=${descMeteo(daily.weather_code[w])[1]} size=${22} /><span><span class="dc-min">${Math.round(daily.temperature_2m_min[w])}°/</span>${Math.round(daily.temperature_2m_max[w])}°</span></span>` : html`<span class="dc-w"></span>`}
             <span class="dc-dots">${Array.from({ length: Math.min(n, 3) }, () => html`<i></i>`)}</span>
           </button>`;
         })}

@@ -89,7 +89,7 @@ export function MeteoView({ sub }) {
     ${head}
     <div class="mt-dies" role="tablist" aria-label="Dies">${daily.time.map((s, j) => html`<button role="tab" aria-selected=${s === d} class=${'mt-dia' + (s === d ? ' on' : '')} onClick=${() => setDia(s)}>
       <span>${j === 0 ? 'Avui' : DIES_CURTS[parseYmd(s).getDay()]}</span><${WeatherIcon} kind=${descMeteo(daily.weather_code[j])[1]} size=${26} />
-      <b>${r(daily.temperature_2m_max[j])}°</b><small>${r(daily.temperature_2m_min[j])}°</small>
+      <span class="mt-mm2"><small>${r(daily.temperature_2m_min[j])}°/</small><b>${r(daily.temperature_2m_max[j])}°</b></span>
       <em class=${daily.precipitation_probability_max[j] >= 20 ? 'pl' : ''}>${daily.precipitation_probability_max[j] >= 20 ? `${daily.precipitation_probability_max[j]}%` : ' '}</em></button>`)}</div>
 
     <div class="card mt-resum">
