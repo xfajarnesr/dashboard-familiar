@@ -1,9 +1,10 @@
 import { html, useState } from '../vendor/preact-htm.js';
-import { ctx, Icon, Sheet, Field, Seg, PersonPicker, Who, Empty, useForm, nomDe, colorDe } from '../ui.js';
+import { ctx, Icon, WeatherIcon, Sheet, Field, Seg, PersonPicker, Who, Empty, useForm, nomDe, colorDe } from '../ui.js';
 import { ymd, parseYmd, addDaysYmd, startOfWeek, fmtLlarg, fmtCurt, daysBetween, MESOS_CAP, DIES_CURTS, uid, relatiu, hhmmToMin } from '../util.js';
 import { ocurrencies, perDia, CATS, TIPUS_ESCOLAR } from '../calendar.js';
 import { HorarisView, blocsDe, diaDe } from './horaris.js';
 import { lsGet, lsSet } from '../util.js';
+import { useMeteo, descMeteo } from '../meteo.js';
 
 export function AgendaView({ sub }) {
   const tab = sub || 'calendari';
@@ -57,12 +58,27 @@ export function OcList({ ocs, onEdit, showDate }) {
 function Calendari() {
   const [mes, setMes] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
   const [sel, setSel] = useState(ymd());
+  const [vista, setVistaS] = useState(lsGet('df.cal.vista', 'mes') === 'setmana' ? 'setmana' : 'mes');
+  const [setm, setSetm] = useState(() => startOfWeek(new Date()));
+  const meteo = useMeteo();
   const [edit, setEdit] = useState(null);
   const [barca, setBarca] = useState(lsGet('df.cal.barca', true));
   const [femeni, setFemeni] = useState(lsGet('df.cal.femeni', false));
-  const ini = ymd(startOfWeek(mes));
+  const setVista = (v) => {
+    setVistaS(v); lsSet('df.cal.vista', v);
+    if (v === 'setmana') setSetm(startOfWeek(parseYmd(sel)));
+    else { const d = parseYmd(sel); setMes(new Date(d.getFullYear(), d.getMonth(), 1)); }
+  };
+  const esSetm = vista === 'setmana';
+  const iniSetm = ymd(setm), fiSetm = addDaysYmd(iniSetm, 6);
+  const mou = (n) => {
+    if (esSetm) { const d = new Date(setm.getFullYear(), setm.getMonth(), setm.getDate() + 7 * n); setSetm(d); setSel(ymd(d)); }
+    else setMes(new Date(mes.getFullYear(), mes.getMonth() + n, 1));
+  };
+  const avuiBtn = () => { const d = new Date(); setSel(ymd(d)); setSetm(startOfWeek(d)); setMes(new Date(d.getFullYear(), d.getMonth(), 1)); };
+  const ini = esSetm ? iniSetm : ymd(startOfWeek(mes));
   const fiMes = new Date(mes.getFullYear(), mes.getMonth() + 1, 0);
-  const fi = addDaysYmd(ymd(startOfWeek(fiMes)), 6);
+  const fi = esSetm ? fiSetm : addDaysYmd(ymd(startOfWeek(fiMes)), 6);
   const ocs = ocurrencies(ini, fi, { barca, femeni });
   const m = perDia(ocs);
   const dies = [];
@@ -72,14 +88,31 @@ function Calendari() {
   const propers = ocurrencies(avui, addDaysYmd(avui, 30), { barca, femeni }).filter((o) => !(o.multi && !o.first));
   const nou = () => setEdit({ id: null, title: '', date: sel, end: '', time: '', timeEnd: '', qui: [], cat: 'familia', repeat: 'cap', notes: '', lloc: '' });
   const obre = (o) => (o.kind === 'aniv' ? ctx.nav('mes/aniversaris') : o.kind === 'horari' ? ctx.nav('agenda/horaris') : setEdit(o.kind === 'escolar' ? { ...o.ref, _escolar: true } : o.ref));
-  return html`<div class="cal-wrap">
+  const dSetm = (j) => addDaysYmd(iniSetm, j);
+  const titolSetm = (() => { const a = parseYmd(iniSetm), b = parseYmd(fiSetm); return `${a.getDate()}${a.getMonth() !== b.getMonth() ? ' ' + MESOS_CAP[a.getMonth()].slice(0, 3).toLowerCase() : ''} – ${b.getDate()} ${MESOS_CAP[b.getMonth()].slice(0, 3).toLowerCase()} ${b.getFullYear()}`; })();
+  const wx = (d) => { const i = meteo?.daily ? meteo.daily.time.indexOf(d) : -1; return i < 0 ? null : { kind: descMeteo(meteo.daily.weather_code[i])[1], mn: Math.round(meteo.daily.temperature_2m_min[i]), mx: Math.round(meteo.daily.temperature_2m_max[i]), p: meteo.daily.precipitation_probability_max[i] }; };
+  const nouDia = (d) => setEdit({ id: null, title: '', date: d, end: '', time: '', timeEnd: '', qui: [], cat: 'familia', repeat: 'cap', notes: '', lloc: '' });
+  return html`<div class=${'cal-wrap' + (esSetm ? ' wk' : '')}>
     <div class="cal">
+      <${Seg} small=${true} value=${vista} onChange=${setVista} options=${[{ value: 'mes', label: 'Mes' }, { value: 'setmana', label: 'Setmana' }]} />
       <div class="weeknav">
-        <button class="icon-btn" aria-label="Mes anterior" onClick=${() => setMes(new Date(mes.getFullYear(), mes.getMonth() - 1, 1))}><${Icon} n="left" /></button>
-        <b>${MESOS_CAP[mes.getMonth()]} ${mes.getFullYear()}</b>
-        <button class="icon-btn" aria-label="Mes següent" onClick=${() => setMes(new Date(mes.getFullYear(), mes.getMonth() + 1, 1))}><${Icon} n="right" /></button>
+        <button class="icon-btn" aria-label=${esSetm ? 'Setmana anterior' : 'Mes anterior'} onClick=${() => mou(-1)}><${Icon} n="left" /></button>
+        <b>${esSetm ? titolSetm : `${MESOS_CAP[mes.getMonth()]} ${mes.getFullYear()}`}</b>
+        <button class="icon-btn" aria-label=${esSetm ? 'Setmana següent' : 'Mes següent'} onClick=${() => mou(1)}><${Icon} n="right" /></button>
       </div>
-      <div class="cal-grid">
+      <button class="linkbtn cal-avui" onClick=${avuiBtn}>Torna a avui</button>
+      ${esSetm && html`<div class="wk-grid">${Array.from({ length: 7 }, (_, j) => {
+        const d = dSetm(j), os = m[d] || [], w = wx(d), x = parseYmd(d);
+        return html`<section class=${'wk-day' + (d === avui ? ' today' : '') + (d === sel ? ' sel' : '')} aria-label=${fmtLlarg(d)}>
+          <header onClick=${() => setSel(d)}>
+            <span class="wk-n"><small>${DIES_CURTS[x.getDay()]}</small><b>${x.getDate()}</b></span>
+            <span class="wk-wx">${w ? html`<${WeatherIcon} kind=${w.kind} size=${22} /><small>${w.mn}°/${w.mx}°${w.p >= 20 ? ` · ${w.p}%` : ''}</small>` : ''}</span>
+            <button class="icon-btn sm" aria-label=${`Afegeix el ${fmtLlarg(d)}`} onClick=${(e) => { e.stopPropagation(); setSel(d); nouDia(d); }}><${Icon} n="plus" size=${16} /></button>
+          </header>
+          ${os.length === 0 ? html`<p class="wk-buit">Res</p>` : html`<${OcList} ocs=${os} onEdit=${obre} />`}
+        </section>`;
+      })}</div>`}
+      ${!esSetm && html`<div class="cal-grid">
         ${[1, 2, 3, 4, 5, 6, 0].map((i) => html`<span class="cal-dow">${DIES_CURTS[i]}</span>`)}
         ${dies.map((d) => {
           const os = m[d] || [];
@@ -91,7 +124,7 @@ function Calendari() {
             <span class="marks">${os.filter((o) => o.kind !== 'escolar' || o.tipus === 'curs').slice(0, 4).map((o) => html`<i style=${{ background: o.color }}></i>`)}</span>
           </button>`;
         })}
-      </div>
+      </div>`}
       <label class="check small"><input type="checkbox" checked=${barca} onChange=${(e) => { setBarca(e.target.checked); lsSet('df.cal.barca', e.target.checked); }} /> Partits del Barça</label>
       ${barca && html`<label class="check small"><input type="checkbox" checked=${femeni} onChange=${(e) => { setFemeni(e.target.checked); lsSet('df.cal.femeni', e.target.checked); }} /> També el Barça Femení</label>`}
     </div>

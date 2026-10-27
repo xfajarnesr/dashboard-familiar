@@ -1,6 +1,6 @@
 // Service worker: l'app funciona sense xarxa. Xarxa primer per al codi (així les actualitzacions arriben de seguida).
-const CACHE = 'casa-v13';
-const SHELL = ['./', 'index.html', 'css/app.css?v=13', 'js/main.js?v=13', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png'];
+const CACHE = 'casa-v14';
+const SHELL = ['./', 'index.html', 'css/app.css?v=14', 'js/main.js?v=14', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png'];
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', (e) => { e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener('fetch', (e) => {
