@@ -9,6 +9,7 @@ export const CATS = {
   escola: { nom: 'Escola', color: '#2E9E6A' },
   salut: { nom: 'Salut', color: '#C2407A' },
   oci: { nom: 'Oci', color: '#7A5AC8' },
+  serveis: { nom: 'Serveis', color: '#2F6FDB' },
   altres: { nom: 'Altres', color: '#8A94A3' },
 };
 export const TIPUS_ESCOLAR = {

@@ -10,7 +10,7 @@ function dataAny(dia, y) {
 
 export const TIPUS_DATA = {
   aniversari: { nom: 'Aniversari', color: '#E0457B', qui: 'Qui', ph: 'Àvia Montse' },
-  sant: { nom: 'Sant', color: '#E2A31B', qui: 'Qui fa el sant', ph: 'Maria' },
+  sant: { nom: 'Sant', color: '#E2A31B', qui: 'Quin sant', ph: 'Santa Maria' },
   altra: { nom: 'Altra data', color: '#2F6FDB', qui: 'Què', ph: 'Aniversari de casament' },
 };
 export const tipusDe = (a) => (TIPUS_DATA[a.tipus] ? a.tipus : 'aniversari');
@@ -19,7 +19,7 @@ export const colorData = (a) => TIPUS_DATA[tipusDe(a)].color;
 export const anysDe = (a, edat) => (tipusDe(a) === 'sant' ? null : edat);
 export function titolData(a, edat) {
   const t = tipusDe(a), e = anysDe(a, edat);
-  if (t === 'sant') return `Sant de ${a.nom}`;
+  if (t === 'sant') return a.nom;
   if (t === 'altra') return `${a.nom}${e ? ` (${e})` : ''}`;
   return `Aniversari ${a.nom}${e ? ` (${e})` : ''}`;
 }
