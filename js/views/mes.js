@@ -217,8 +217,8 @@ export function Partit({ p }) {
   const d = new Date(p.data);
   const dia = ymd(d);
   const hora = d.toLocaleTimeString('ca', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Madrid' });
-  return html`<li class="match">
-    <span class="m-when"><b>${relatiu(dia)}</b><small>${fmtLlarg(dia).split(' ').slice(1).join(' ')}${p.resultat ? '' : ` · ${hora}`}</small></span>
+  return html`<li class=${'match' + (p.horaConfirmada === false && !p.resultat ? ' pendent' : '')}>
+    <span class="m-when"><b>${relatiu(dia)}</b><small>${fmtLlarg(dia).split(' ').slice(1).join(' ')}${p.resultat ? '' : p.horaConfirmada === false ? ' · hora per confirmar' : ` · ${hora}`}</small></span>
     <span class="m-teams"><span class=${p.local.includes('Barcelona') ? 'fcb' : ''}>${p.local}</span>${p.resultat ? html`<b class="m-score">${p.resultat}</b>` : html`<span class="muted"> – </span>`}<span class=${p.visitant.includes('Barcelona') ? 'fcb' : ''}>${p.visitant}</span></span>
     <small class="m-comp">${p.competicio}${p.equip === 'femeni' ? ' · Femení' : ''}</small>
   </li>`;

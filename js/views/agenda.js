@@ -20,9 +20,9 @@ export function AgendaView({ sub }) {
 export function OcRow({ o, onEdit, showDate }) {
   const editable = o.kind === 'event' || o.kind === 'escolar' || o.kind === 'aniv' || o.kind === 'horari';
   return html`<li class=${'oc oc-' + o.kind + (o.tipusData ? ' oc-t-' + o.tipusData : '')} style=${{ '--c': o.color }} onClick=${() => editable && onEdit && onEdit(o)}>
-    <span class="oc-time">${showDate ? (daysBetween(ymd(), o.date) < 7 ? relatiu(o.date) : fmtCurt(o.date)) : o.time || (o.multi ? '' : 'Tot el dia')}${showDate && o.time ? ` ${o.time}` : ''}</span>
+    <span class="oc-time">${showDate ? (daysBetween(ymd(), o.date) < 7 ? relatiu(o.date) : fmtCurt(o.date)) : o.time || (o.horaPendent ? 'Hora?' : o.multi ? '' : 'Tot el dia')}${showDate && o.time ? ` ${o.time}` : ''}${showDate && o.horaPendent ? ' · hora?' : ''}</span>
     <span class="oc-body"><span class="oc-title">${o.priv && html`<span class="priv" title=${o.priv === 'jo' ? 'Només ho veus tu' : "L'altre hi veu «ocupat»"}><${Icon} n="lock" size=${13} stroke=${2.2} /></span>`}${o.title}${o.anys > 0 && o.ref.mostraAnys ? ` (${o.anys})` : ''}</span>
-      ${(o.sub || o.lloc || (o.time && o.timeEnd)) && html`<small class="muted">${[o.time && o.timeEnd ? `fins a les ${o.timeEnd}` : '', o.lloc, o.sub].filter(Boolean).join(' · ')}</small>`}
+      ${(o.sub || o.lloc || o.horaPendent || (o.time && o.timeEnd)) && html`<small class="muted">${[o.horaPendent ? 'Hora per confirmar' : '', o.time && o.timeEnd ? `fins a les ${o.timeEnd}` : '', o.lloc, o.sub].filter(Boolean).join(' · ')}</small>`}
     </span>
     ${o.qui && html`<${Who} id=${o.qui === 'tots' ? 'tots' : o.qui} small=${true} />`}
   </li>`;

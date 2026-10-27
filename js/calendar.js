@@ -81,7 +81,7 @@ export function ocurrencies(from, to, { barca = true, femeni = false, docs = tru
       if (p.equip === 'femeni' && !femeni) continue;
       const d = ymd(new Date(p.data));
       const hora = new Date(p.data).toLocaleTimeString('ca', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Madrid' });
-      push({ date: d, time: p.horaConfirmada === false ? null : hora, title: `${p.local} – ${p.visitant}`, kind: 'barca', color: '#A50044', ref: p, sub: p.competicio + (p.equip === 'femeni' ? ' · Femení' : '') });
+      push({ date: d, time: p.horaConfirmada === false ? null : hora, horaPendent: p.horaConfirmada === false, title: `${p.local} – ${p.visitant}`, kind: 'barca', color: '#A50044', ref: p, sub: p.competicio + (p.equip === 'femeni' ? ' · Femení' : '') });
     }
   }
 
