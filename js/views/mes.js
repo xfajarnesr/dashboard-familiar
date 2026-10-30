@@ -221,6 +221,7 @@ export function Partit({ p }) {
     <span class="m-when"><b>${relatiu(dia)}</b><small>${fmtLlarg(dia).split(' ').slice(1).join(' ')}${p.resultat ? '' : p.horaConfirmada === false ? ' · hora per confirmar' : ` · ${hora}`}</small></span>
     <span class="m-teams"><span class=${p.local.includes('Barcelona') ? 'fcb' : ''}>${p.local}</span>${p.resultat ? html`<b class="m-score">${p.resultat}</b>` : html`<span class="muted"> – </span>`}<span class=${p.visitant.includes('Barcelona') ? 'fcb' : ''}>${p.visitant}</span></span>
     <small class="m-comp">${p.competicio}${p.equip === 'femeni' ? ' · Femení' : ''}</small>
+    ${p.tv && !p.resultat && html`<small class=${'m-tv' + (p.tvConfirmada === false ? ' incert' : '')} title=${p.tvNota || ''}>📺 ${p.tv}${p.tvConfirmada === false ? ' (per confirmar)' : ''}</small>`}
   </li>`;
 }
 

@@ -327,7 +327,7 @@ input + input, .chips + input { margin-top: .4rem; }
 .matches { list-style: none; margin: 0; padding: 0; }
 .match { display: grid; grid-template-columns: 6.5rem 1fr; gap: .1rem .8rem; padding: .55rem 0; border-bottom: 1px solid var(--line); }
 .match:last-child { border-bottom: 0; }
-.m-when { grid-row: span 2; display: flex; flex-direction: column; }
+.m-when { grid-row: 1 / -1; display: flex; flex-direction: column; }
 .m-when b { text-transform: capitalize; }
 .m-when small { color: var(--muted); font-size: .8rem; }
 .m-teams { font-weight: 700; }
@@ -666,3 +666,8 @@ input + input, .chips + input { margin-top: .4rem; }
 
 .match.pendent .m-when small { font-style: italic; }
 .match.pendent { border-style: dashed; }
+
+.tema .tema-nota { display: block; white-space: pre-line; margin-top: .1rem; }
+
+.m-tv { grid-column: 2; font-weight: 700; color: var(--ink-2); }
+.m-tv.incert { font-weight: 600; font-style: italic; color: var(--muted); }

@@ -29,10 +29,11 @@ export function LlistesView({ sub }) {
   const tab = sub || 'compra';
   return html`<section class="view sec-llistes">
     <header class="view-head"><h1>Llistes</h1></header>
-    <${Seg} value=${tab} onChange=${(v) => ctx.nav(`llistes/${v}`)} options=${[{ value: 'compra', label: 'Compra' }, { value: 'tasques', label: 'Tasques' }, { value: 'casa', label: 'Per casa' }]} />
+    <${Seg} value=${tab} onChange=${(v) => ctx.nav(`llistes/${v}`)} options=${[{ value: 'compra', label: 'Compra' }, { value: 'tasques', label: 'Tasques' }, { value: 'casa', label: 'Per casa' }, { value: 'temes', label: 'Temes' }]} />
     ${tab === 'compra' && html`<${Llista} key="compra" k="compra" cats=${botigues()} botiga=${true} placeholder="Afegeix a la compra…" buit="La llista és buida" buitText="Tria la botiga, escriu el que falta i prem Retorn. Pots posar-ne uns quants separats per comes." />`}
     ${tab === 'casa' && html`<${Llista} key="casa" k="casa" cats=${CATS_CASA} placeholder="Què ens cal per casa?" buit="No falta res" buitText="Bombetes, una prestatgeria, un regal de casament… tot el que no és de supermercat." />`}
     ${tab === 'tasques' && html`<${Tasques} />`}
+    ${tab === 'temes' && html`<${Temes} />`}
   </section>`;
 }
 
@@ -133,6 +134,55 @@ export function TascaRow({ t, onEdit }) {
       <small class=${tard ? 'late' : 'muted'}>${t.data ? ` · ${relatiu(t.data)}` : ''}${t.recur && t.recur !== 'cap' ? ' · ↻' : ''}</small></span>
     <${Who} id=${t.qui} small=${true} />
   </li>`;
+}
+
+// Temes pendents: coses per parlar o decidir entre nosaltres (no són tasques: no tenen data)
+function Temes() {
+  const [txt, setTxt] = useState('');
+  const [edit, setEdit] = useState(null);
+  const [veureFets, setVeureFets] = useState(false);
+  const tots = ctx.store.items('temes');
+  const pend = tots.filter((t) => !t.fet).sort((a, b) => (a.createdAt || '').localeCompare(b.createdAt || ''));
+  const fets = tots.filter((t) => t.fet).sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''));
+  const afegir = (e) => {
+    e.preventDefault();
+    const t = txt.trim();
+    if (!t) return;
+    ctx.store.upsert('temes', { id: uid(), text: t, nota: '', qui: 'tots', fet: false, by: ctx.me }, `tema: ${t}`);
+    setTxt('');
+  };
+  const toggle = (t) => ctx.store.upsert('temes', { id: t.id, fet: !t.fet, resolt: !t.fet ? ymd() : null, by: t.by || ctx.me }, `${t.fet ? 'reobre' : 'tema parlat'}: ${t.text}`);
+  const fila = (t, fet) => html`<li class="item tema">
+    <button class=${'tick-box' + (fet ? ' on' : '')} aria-label=${fet ? `Reobre ${t.text}` : `Marca com a parlat ${t.text}`} onClick=${() => toggle(t)}>${fet && html`<${Icon} n="check" size=${14} />`}</button>
+    <span class="item-txt" onClick=${() => setEdit(t)}>${t.text}${t.nota ? html`<small class="muted tema-nota">${t.nota}</small>` : ''}</span>
+    ${t.qui && t.qui !== 'tots' && html`<${Who} id=${t.qui} small=${true} />`}
+    <button class="icon-btn sm" aria-label="Edita" onClick=${() => setEdit(t)}><${Icon} n="edit" size=${16} /></button>
+  </li>`;
+  return html`<div>
+    <form class="addbar" onSubmit=${afegir}>
+      <input value=${txt} onInput=${(e) => setTxt(e.target.value)} placeholder="Un tema per parlar o decidir…" aria-label="Afegeix un tema pendent" enterkeyhint="done" />
+      <button class="btn primary" aria-label="Afegeix"><${Icon} n="plus" size=${18} /></button>
+    </form>
+    <p class="hint">Coses que cal parlar o decidir entre nosaltres. Quan us n'ocupeu, marqueu-les com a parlades.</p>
+    ${pend.length === 0 && html`<${Empty} title="Cap tema pendent" text="Vacances, escola, una compra grossa, el que sigui que no cap en una tasca." />`}
+    ${pend.length > 0 && html`<ul class="items">${pend.map((t) => fila(t, false))}</ul>`}
+    ${fets.length > 0 && html`<div class="fets">
+      <button class="linkbtn" onClick=${() => setVeureFets(!veureFets)}>${veureFets ? 'Amaga' : 'Mostra'} els parlats (${fets.length})</button>
+      ${veureFets && html`<ul class="items done">${fets.slice(0, 60).map((t) => fila(t, true))}</ul>`}
+    </div>`}
+    ${edit && html`<${TemaForm} t=${edit} onClose=${() => setEdit(null)} />`}
+  </div>`;
+}
+
+function TemaForm({ t, onClose }) {
+  const [f, set, setF] = useForm({ ...t, nota: t.nota || '', qui: t.qui || 'tots' });
+  const save = () => { if (!f.text.trim()) return; ctx.store.upsert('temes', { id: f.id, text: f.text.trim(), nota: f.nota.trim(), qui: f.qui }, `edita tema: ${f.text}`); onClose(); };
+  const del = () => { ctx.store.remove('temes', f.id, `treu tema: ${f.text}`); onClose(); };
+  return html`<${Sheet} title="Tema pendent" onClose=${onClose} actions=${html`<button class="btn ghost danger" onClick=${del}><${Icon} n="trash" size=${16} /> Esborra</button><button class="btn primary" onClick=${save}>Desa</button>`}>
+    <${Field} label="Tema"><input value=${f.text} onInput=${set('text')} /><//>
+    <${Field} label="Notes" hint="Opcions, números, el que vulguis tenir a mà quan en parleu."><textarea rows="3" value=${f.nota} onInput=${set('nota')}></textarea><//>
+    <${Field} label="Qui ho vol parlar"><${PersonPicker} nomesAdults=${true} value=${f.qui} onChange=${(v) => setF((x) => ({ ...x, qui: v }))} /><//>
+  <//>`;
 }
 
 function Tasques() {
