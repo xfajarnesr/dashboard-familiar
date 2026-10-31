@@ -88,13 +88,13 @@ export function Logo({ size = 48 }) {
 }
 
 // ---------- Components ----------
-export function Sheet({ title, onClose, children, actions }) {
+export function Sheet({ title, onClose, children, actions, noFocus }) {
   const ref = useRef();
   useEffect(() => {
     const k = (e) => e.key === 'Escape' && onClose();
     document.addEventListener('keydown', k);
     document.body.classList.add('noscroll');
-    setTimeout(() => ref.current?.querySelector('input,textarea,select')?.focus(), 60);
+    if (!noFocus) setTimeout(() => ref.current?.querySelector('input,textarea,select')?.focus(), 60);
     return () => { document.removeEventListener('keydown', k); document.body.classList.remove('noscroll'); };
   }, []);
   return html`<div class="sheet-bg" onClick=${(e) => e.target === e.currentTarget && onClose()}>

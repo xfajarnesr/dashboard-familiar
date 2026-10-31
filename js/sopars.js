@@ -38,16 +38,28 @@ function hash(s) {
 }
 
 // Retorna la proteïna efectiva d'un sopar (plat + complements)
+// Un sopar pot combinar diversos plats del catàleg (hamburguesa de pollastre + tomàquet i alvocat).
+// Les dades antigues tenen `platId` (un sol plat); les noves, `plats` (llista d'ids).
+export function platsIds(entry) {
+  if (!entry) return [];
+  if (Array.isArray(entry.plats) && entry.plats.length) return entry.plats;
+  return entry.platId ? [entry.platId] : [];
+}
+
 export function proteinaSopar(entry, cataleg) {
   if (!entry) return null;
   if (entry.proteina) return entry.proteina;
-  const plat = cataleg.find((c) => c.id === entry.platId);
-  if (plat?.proteina) return plat.proteina;
+  for (const id of platsIds(entry)) {
+    const plat = cataleg.find((c) => c.id === id);
+    if (plat?.proteina) return plat.proteina;
+  }
   return entry.complementProteina || null;
 }
 
-export function components(plat, complements = []) {
-  const c = { verdura: !!plat?.verdura, hidrats: !!plat?.hidrats, proteina: !!plat?.proteina };
+// `plats` pot ser un plat o una llista de plats
+export function components(plats, complements = []) {
+  const ll = (Array.isArray(plats) ? plats : [plats]).filter(Boolean);
+  const c = { verdura: ll.some((p) => p.verdura), hidrats: ll.some((p) => p.hidrats), proteina: ll.some((p) => p.proteina) };
   for (const x of complements) {
     if (COMPLEMENTS.verdura.includes(x)) c.verdura = true;
     if (COMPLEMENTS.hidrats.includes(x)) c.hidrats = true;
@@ -78,13 +90,12 @@ export function proposaSetmana(dilluns, { cataleg, pla, menus, llavor = '' }) {
   // Plats usats recentment (14 dies abans)
   const recents = new Map();
   for (const p of pla) {
-    if (!p.platId) continue;
     const dd = (parseYmd(dilluns) - parseYmd(p.id)) / 86400000;
-    if (dd > 0 && dd <= 14) recents.set(p.platId, true);
+    if (dd > 0 && dd <= 14) for (const id of platsIds(p)) recents.set(id, true);
   }
 
   const propostes = [];
-  const usatsSetmana = new Set(dies.map((d) => plaMap[d]?.fixat && plaMap[d].platId).filter(Boolean));
+  const usatsSetmana = new Set(dies.flatMap((d) => (plaMap[d]?.fixat ? platsIds(plaMap[d]) : [])));
   let anterior = plaMap[addDaysYmd(dilluns, -1)] ? proteinaSopar(plaMap[addDaysYmd(dilluns, -1)], cataleg) : null;
 
   for (const d of dies) {
@@ -141,7 +152,7 @@ export function proposaSetmana(dilluns, { cataleg, pla, menus, llavor = '' }) {
     add(prot);
     usatsSetmana.add(plat.id);
     anterior = prot;
-    propostes.push({ id: d, platId: plat.id, complements, complementProteina, motius, fixat: false });
+    propostes.push({ id: d, plats: [plat.id], platId: null, text: null, complements, complementProteina, motius, fixat: false });
   }
   return propostes;
 }
