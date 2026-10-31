@@ -691,3 +691,16 @@ input + input, .chips + input { margin-top: .4rem; }
 .pitem.on { background: color-mix(in srgb, var(--c) 12%, var(--surface)); }
 .pitem.on .pbox { background: var(--c); border-color: var(--c); }
 .pitem.on .pnom { font-weight: 700; }
+.psub { padding: .5rem .75rem .6rem; border-top: 1px solid var(--line); }
+.pgrup-h + .psub { border-top: 0; }
+.psub-h { display: block; font-size: .78rem; font-weight: 700; color: color-mix(in srgb, var(--c) 80%, var(--ink)); margin-bottom: .35rem; }
+.pchips { display: flex; flex-wrap: wrap; gap: .4rem; }
+.pchips.pad { padding: .6rem .75rem; }
+.pchipbtn { --c: var(--muted); border: 1.5px solid color-mix(in srgb, var(--c) 45%, var(--line)); background: var(--surface); color: var(--ink); border-radius: 99px; padding: .4rem .8rem; min-height: 38px; font: inherit; font-size: .92rem; cursor: pointer; }
+.pchipbtn.on { background: var(--c); border-color: var(--c); color: #fff; font-weight: 700; }
+.falta { color: var(--warn); font-weight: 700; }
+.cat-group { border-left: 4px solid var(--c, var(--line)); padding-left: .75rem; }
+.cat-h { color: color-mix(in srgb, var(--c) 80%, var(--ink)); }
+.cat-sub { font-size: .82rem; margin: .5rem 0 .1rem; text-transform: uppercase; letter-spacing: .04em; }
+.cat-xips { margin: .3rem 0 .4rem; }
+.pchipbtn.off { opacity: .45; text-decoration: line-through; }

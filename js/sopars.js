@@ -38,12 +38,35 @@ function hash(s) {
 }
 
 // Retorna la proteïna efectiva d'un sopar (plat + complements)
-// Un sopar pot combinar diversos plats del catàleg (hamburguesa de pollastre + tomàquet i alvocat).
+// Un sopar pot combinar diversos elements del catàleg (hamburguesa de pollastre + pa + tomàquet).
 // Les dades antigues tenen `platId` (un sol plat); les noves, `plats` (llista d'ids).
 export function platsIds(entry) {
   if (!entry) return [];
   if (Array.isArray(entry.plats) && entry.plats.length) return entry.plats;
   return entry.platId ? [entry.platId] : [];
+}
+
+// El catàleg s'organitza en calaixos. Els bàsics són un sol aliment; els elaborats diuen què cobreixen;
+// les combinacions són llistes d'ids (les favorites es desen al catàleg, les recents surten del pla).
+export const CALAIXOS = {
+  proteina: { nom: 'Proteïna', color: '#b0506a' },
+  hidrats: { nom: 'Hidrats', color: '#c08a2a' },
+  verdura: { nom: 'Verdura', color: '#5f9a3a' },
+  elaborat: { nom: 'Elaborats', color: '#7A4FC4' },
+  combo: { nom: 'Combinacions freqüents', color: '#D6336C' },
+};
+export function calaixDe(c) {
+  if (!c) return null;
+  if (c.calaix) return c.calaix;
+  return Array.isArray(c.plats) ? 'combo' : 'elaborat'; // plats antics: compten com a elaborats
+}
+// Què aporta un element: { verdura, hidrats, proteina } (booleans)
+export function cobreix(c) {
+  const k = calaixDe(c);
+  if (k === 'proteina') return { verdura: false, hidrats: false, proteina: true };
+  if (k === 'hidrats') return { verdura: false, hidrats: true, proteina: false };
+  if (k === 'verdura') return { verdura: true, hidrats: false, proteina: false };
+  return { verdura: !!c.verdura, hidrats: !!c.hidrats, proteina: !!c.proteina };
 }
 
 export function proteinaSopar(entry, cataleg) {
@@ -56,11 +79,11 @@ export function proteinaSopar(entry, cataleg) {
   return entry.complementProteina || null;
 }
 
-// `plats` pot ser un plat o una llista de plats
+// `plats` pot ser un element o una llista; `complements` són els textos antics (abans de tenir calaixos)
 export function components(plats, complements = []) {
-  const ll = (Array.isArray(plats) ? plats : [plats]).filter(Boolean);
+  const ll = (Array.isArray(plats) ? plats : [plats]).filter(Boolean).map(cobreix);
   const c = { verdura: ll.some((p) => p.verdura), hidrats: ll.some((p) => p.hidrats), proteina: ll.some((p) => p.proteina) };
-  for (const x of complements) {
+  for (const x of complements || []) {
     if (COMPLEMENTS.verdura.includes(x)) c.verdura = true;
     if (COMPLEMENTS.hidrats.includes(x)) c.hidrats = true;
     if (Object.values(COMPLEMENTS.proteina).includes(x)) c.proteina = true;
@@ -70,79 +93,84 @@ export function components(plats, complements = []) {
 
 /**
  * Proposa sopars per als dies lliures d'una setmana.
- * @param {string} dilluns  YYYY-MM-DD del dilluns
- * @param {object} ctx { cataleg:[], pla:[] (items), menus: {ymd: menuDia}, llavor: string }
- * @returns {Array} propostes [{id:ymd, platId, complements, complementProteina, motius, fixat:false}]
+ * Candidats: una proteïna bàsica, un elaborat o una combinació favorita. Després s'hi afegeix
+ * el que falti (hidrats, verdura i, si cal, proteïna) dels calaixos de bàsics.
+ * @returns {Array} propostes [{id:ymd, plats:[ids], motius, fixat:false}]
  */
 export function proposaSetmana(dilluns, { cataleg, pla, menus, llavor = '' }) {
-  const plats = cataleg.filter((c) => !c.desactivat);
-  if (!plats.length) return [];
+  const actius = cataleg.filter((c) => !c.desactivat);
+  const per = (k) => actius.filter((c) => calaixDe(c) === k);
+  const byId = Object.fromEntries(cataleg.map((c) => [c.id, c]));
+  const prots = per('proteina'), hid = per('hidrats'), ver = per('verdura');
+  const cands = [
+    ...prots.map((c) => ({ key: c.id, plats: [c.id], prot: c.proteina, fav: c.favorit, tipus: 'proteina' })),
+    ...per('elaborat').map((c) => ({ key: c.id, plats: [c.id], prot: c.proteina, fav: c.favorit, temps: c.temps, tipus: 'elaborat' })),
+    ...per('combo').map((c) => {
+      const pl = (c.plats || []).filter((id) => byId[id] && !byId[id].desactivat);
+      return { key: c.id, plats: pl, prot: pl.map((id) => byId[id].proteina).find(Boolean) || null, fav: true, tipus: 'combo' };
+    }).filter((c) => c.plats.length),
+  ];
+  if (!cands.length) return [];
   const dies = Array.from({ length: 7 }, (_, i) => addDaysYmd(dilluns, i));
   const plaMap = Object.fromEntries(pla.map((p) => [p.id, p]));
   const recompte = {};
   const add = (t, w = 1) => { if (t) recompte[protTipus(t)] = (recompte[protTipus(t)] || 0) + w; };
 
-  // Dinars dels nens de la setmana
   for (const d of dies) for (const t of proteinaDinar(menus[d])) add(t, 1 / Math.max(1, proteinaDinar(menus[d]).length));
-  // Sopars ja fixats
   for (const d of dies) if (plaMap[d]?.fixat) add(proteinaSopar(plaMap[d], cataleg));
 
-  // Plats usats recentment (14 dies abans)
-  const recents = new Map();
+  const recents = new Set();
   for (const p of pla) {
     const dd = (parseYmd(dilluns) - parseYmd(p.id)) / 86400000;
-    if (dd > 0 && dd <= 14) for (const id of platsIds(p)) recents.set(id, true);
+    if (dd > 0 && dd <= 14) for (const id of platsIds(p)) recents.add(id);
   }
+  const usats = new Set(dies.flatMap((d) => (plaMap[d]?.fixat ? platsIds(plaMap[d]) : [])));
+  let anterior = plaMap[addDaysYmd(dilluns, -1)] ? proteinaSopar(plaMap[addDaysYmd(dilluns, -1)], cataleg) : null;
+  const tria = (llista, clau) => {
+    if (!llista.length) return null;
+    const ord = llista.map((c) => ({ c, s: (usats.has(c.id) ? -3 : 0) + (c.favorit ? 1 : 0) + hash(llavor + clau + c.id) * 2.5 })).sort((a, b) => b.s - a.s);
+    return ord[0].c;
+  };
 
   const propostes = [];
-  const usatsSetmana = new Set(dies.flatMap((d) => (plaMap[d]?.fixat ? platsIds(plaMap[d]) : [])));
-  let anterior = plaMap[addDaysYmd(dilluns, -1)] ? proteinaSopar(plaMap[addDaysYmd(dilluns, -1)], cataleg) : null;
-
   for (const d of dies) {
     if (plaMap[d]?.fixat) { anterior = proteinaSopar(plaMap[d], cataleg); continue; }
-    const dinar = proteinaDinar(menus[d]);
+    const dinar = proteinaDinar(menus[d]).map(protTipus);
     const dow = parseYmd(d).getDay();
-    const feiner = dow >= 1 && dow <= 4; // dl–dj: millor coses ràpides
+    const feiner = dow >= 1 && dow <= 4;
     let millor = null;
-    for (const plat of plats) {
-      const t = protTipus(plat.proteina);
+    for (const c of cands) {
+      const t = protTipus(c.prot);
       let s = 0;
-      const motius = [];
       if (t) {
-        const deficit = (OBJECTIU[t] || 0.5) - (recompte[t] || 0);
-        s += deficit * 2;
-        if (dinar.map(protTipus).includes(t)) { s -= 7; }
+        s += ((OBJECTIU[t] || 0.5) - (recompte[t] || 0)) * 2;
+        if (dinar.includes(t)) s -= 7;
         if (anterior && protTipus(anterior) === t) s -= 3;
-      } else {
-        s -= 1; // sense proteïna pròpia: caldrà complement
-      }
-      if (usatsSetmana.has(plat.id)) s -= 20;
-      if (recents.has(plat.id)) s -= 4;
-      if (plat.favorit) s += 1.5;
-      if (feiner && plat.temps === 'ràpid') s += 1;
-      if (feiner && plat.temps === 'llarg') s -= 1.5;
-      s += hash(llavor + d + plat.id) * 1.6;
-      if (!millor || s > millor.s) millor = { s, plat, motius };
+      } else s -= 1;
+      if (c.plats.some((id) => usats.has(id))) s -= c.tipus === 'proteina' ? 6 : 20;
+      if (c.plats.some((id) => recents.has(id))) s -= c.tipus === 'proteina' ? 1 : 4;
+      if (c.fav) s += 1.5;
+      if (c.tipus === 'elaborat') s -= 0.5; // en feu menys
+      if (feiner && c.temps === 'llarg') s -= 1.5;
+      s += hash(llavor + d + c.key) * 1.6;
+      if (!millor || s > millor.s) millor = { s, c };
     }
-    const plat = millor.plat;
-    const complements = [];
-    let complementProteina = null;
-    const idx = Math.floor(hash(llavor + d) * 100);
-    if (!plat.verdura) complements.push(COMPLEMENTS.verdura[idx % COMPLEMENTS.verdura.length]);
-    if (!plat.hidrats) complements.push(COMPLEMENTS.hidrats[idx % COMPLEMENTS.hidrats.length]);
-    if (!plat.proteina) {
-      // tria la proteïna amb més dèficit que no coincideixi amb el dinar
+    const plats = [...millor.c.plats];
+    const comp = components(plats.map((id) => byId[id]));
+    let prot = millor.c.prot;
+    if (!comp.proteina) {
       const opcions = ['ou', 'lactic', 'peix', 'llegum', 'carn-blanca']
-        .filter((t) => !dinar.map(protTipus).includes(t))
+        .filter((t) => !dinar.includes(t))
         .sort((a, b) => ((OBJECTIU[b] || 0) - (recompte[b] || 0)) - ((OBJECTIU[a] || 0) - (recompte[a] || 0)));
-      complementProteina = opcions[0] || 'ou';
-      complements.push(COMPLEMENTS.proteina[complementProteina]);
+      const p = tria(prots.filter((c) => opcions.slice(0, 2).includes(protTipus(c.proteina))), d + 'p') || tria(prots, d + 'p');
+      if (p) { plats.push(p.id); prot = p.proteina; }
     }
-    const prot = plat.proteina || complementProteina;
+    if (!comp.hidrats) { const h = tria(hid, d + 'h'); if (h) plats.push(h.id); }
+    if (!comp.verdura) { const v = tria(ver, d + 'v'); if (v) plats.push(v.id); }
     const motius = [];
     if (dinar.length) {
-      const noms = dinar.map((t) => PROTEINES[t]?.nom.toLowerCase()).join(' i ');
-      motius.push(dinar.map(protTipus).includes(protTipus(prot)) ? `Al migdia ja han menjat ${noms}` : `Al migdia han menjat ${noms}, al vespre toca una altra cosa`);
+      const noms = proteinaDinar(menus[d]).map((t) => PROTEINES[t]?.nom.toLowerCase()).join(' i ');
+      motius.push(dinar.includes(protTipus(prot)) ? `Al migdia ja han menjat ${noms}` : `Al migdia han menjat ${noms}, al vespre toca una altra cosa`);
     }
     const t = protTipus(prot);
     if (t && OBJECTIU[t]) {
@@ -150,9 +178,9 @@ export function proposaSetmana(dilluns, { cataleg, pla, menus, llavor = '' }) {
       if (portem < OBJECTIU[t]) motius.push(`${PROTEINES[t].nom}: en porten ${fmtN(portem)} de ${fmtN(OBJECTIU[t])} aquesta setmana`);
     }
     add(prot);
-    usatsSetmana.add(plat.id);
+    plats.forEach((id) => usats.add(id));
     anterior = prot;
-    propostes.push({ id: d, plats: [plat.id], platId: null, text: null, complements, complementProteina, motius, fixat: false });
+    propostes.push({ id: d, plats, platId: null, text: null, complements: [], complementProteina: null, motius, fixat: false });
   }
   return propostes;
 }
