@@ -704,3 +704,9 @@ input + input, .chips + input { margin-top: .4rem; }
 .cat-sub { font-size: .82rem; margin: .5rem 0 .1rem; text-transform: uppercase; letter-spacing: .04em; }
 .cat-xips { margin: .3rem 0 .4rem; }
 .pchipbtn.off { opacity: .45; text-decoration: line-through; }
+/* Prioritat: sovint més gran, de tant en tant més discret */
+.pchipbtn.p2 { font-size: 1.02rem; font-weight: 700; padding: .45rem .95rem; border-width: 2px; }
+.pchipbtn.p0 { font-size: .82rem; min-height: 32px; padding: .25rem .65rem; opacity: .8; border-style: dashed; }
+.pchipbtn.p0.on { opacity: 1; border-style: solid; }
+.pnom.p2, .cat-item .p2 { font-weight: 700; }
+.pnom.p0, .cat-item .p0 { color: var(--muted); font-size: .9rem; }

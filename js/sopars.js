@@ -55,6 +55,22 @@ export const CALAIXOS = {
   elaborat: { nom: 'Elaborats', color: '#7A4FC4' },
   combo: { nom: 'Combinacions freqüents', color: '#D6336C' },
 };
+// Prioritat: 2 = sovint, 1 = normal (per defecte), 0 = de tant en tant
+export const PRIO = { 2: 'Sovint', 1: 'Normal', 0: 'De tant en tant' };
+export const prioDe = (c) => (c?.prio === 0 || c?.prio === 2 ? c.prio : c?.favorit && calaixDe(c) !== 'combo' ? 2 : 1);
+// Quants sopars fixats dels últims 90 dies porten cada element (el que feu de debò puja sol)
+export function usos(pla, avui) {
+  const r = {};
+  for (const p of pla) {
+    if (!p.fixat || p.id > avui) continue;
+    if ((parseYmd(avui) - parseYmd(p.id)) / 86400000 > 90) continue;
+    for (const id of platsIds(p)) r[id] = (r[id] || 0) + 1;
+  }
+  return r;
+}
+// Pes per ordenar i proposar: la prioritat marcada més una mica per l'ús real
+export const pesDe = (c, us = {}) => (prioDe(c) - 1) * 1.8 + Math.min(us[c.id] || 0, 4) * 0.4;
+
 export function calaixDe(c) {
   if (!c) return null;
   if (c.calaix) return c.calaix;
@@ -125,10 +141,12 @@ export function proposaSetmana(dilluns, { cataleg, pla, menus, llavor = '' }) {
     if (dd > 0 && dd <= 14) for (const id of platsIds(p)) recents.add(id);
   }
   const usats = new Set(dies.flatMap((d) => (plaMap[d]?.fixat ? platsIds(plaMap[d]) : [])));
+  const us = usos(pla, dilluns);
+  const pesPlats = (ids) => ids.reduce((a, id) => a + (byId[id] ? pesDe(byId[id], us) : 0), 0) / Math.max(1, ids.length);
   let anterior = plaMap[addDaysYmd(dilluns, -1)] ? proteinaSopar(plaMap[addDaysYmd(dilluns, -1)], cataleg) : null;
   const tria = (llista, clau) => {
     if (!llista.length) return null;
-    const ord = llista.map((c) => ({ c, s: (usats.has(c.id) ? -3 : 0) + (c.favorit ? 1 : 0) + hash(llavor + clau + c.id) * 2.5 })).sort((a, b) => b.s - a.s);
+    const ord = llista.map((c) => ({ c, s: (usats.has(c.id) ? -3 : 0) + pesDe(c, us) * 1.2 + hash(llavor + clau + c.id) * 2.5 })).sort((a, b) => b.s - a.s);
     return ord[0].c;
   };
 
@@ -149,7 +167,8 @@ export function proposaSetmana(dilluns, { cataleg, pla, menus, llavor = '' }) {
       } else s -= 1;
       if (c.plats.some((id) => usats.has(id))) s -= c.tipus === 'proteina' ? 6 : 20;
       if (c.plats.some((id) => recents.has(id))) s -= c.tipus === 'proteina' ? 1 : 4;
-      if (c.fav) s += 1.5;
+      s += pesPlats(c.plats);
+      if (c.tipus === 'combo') s += 1.5;
       if (c.tipus === 'elaborat') s -= 0.5; // en feu menys
       if (feiner && c.temps === 'llarg') s -= 1.5;
       s += hash(llavor + d + c.key) * 1.6;

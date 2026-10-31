@@ -1,7 +1,7 @@
 import { html, useState } from '../vendor/preact-htm.js';
 import { ctx, Icon, Sheet, Field, Seg, useForm, Empty, nomDe } from '../ui.js';
 import { ymd, parseYmd, addDaysYmd, startOfWeek, fmtCurt, fmtLlarg, DIES, MESOS_CAP, monthKey, uid, norm } from '../util.js';
-import { PROTEINES, OBJECTIU, CALAIXOS, calaixDe, cobreix, proposaSetmana, proteinaSopar, components, equilibriSetmana, platsIds } from '../sopars.js';
+import { PROTEINES, OBJECTIU, CALAIXOS, PRIO, prioDe, usos, pesDe, calaixDe, cobreix, proposaSetmana, proteinaSopar, components, equilibriSetmana, platsIds } from '../sopars.js';
 import { categoritza } from './llistes.js';
 import { dinarFora } from './horaris.js';
 
@@ -218,8 +218,11 @@ export function combinacions() {
   return { favs, recents, nom: (c) => c.plats.map((id, i) => minus(byId[id].nom, i)).join(' + ') };
 }
 
+// Ordre: el que feu més sovint primer (prioritat marcada + ús real), després alfabètic
+const ordena = (ll, us) => ll.slice().sort((a, b) => pesDe(b, us) - pesDe(a, us) || a.nom.localeCompare(b.nom));
+const prioCls = (c) => ` p${prioDe(c)}`;
 function Chip({ c, on, onClick }) {
-  return html`<button type="button" class=${'pchipbtn' + (on ? ' on' : '')} style=${{ '--c': protColor(c) }} aria-pressed=${on} onClick=${onClick}>${c.favorit ? '★ ' : ''}${c.nom}</button>`;
+  return html`<button type="button" class=${'pchipbtn' + prioCls(c) + (on ? ' on' : '')} style=${{ '--c': protColor(c) }} aria-pressed=${on} onClick=${onClick}>${c.nom}</button>`;
 }
 
 function SoparForm({ d, onClose }) {
@@ -237,7 +240,8 @@ function SoparForm({ d, onClose }) {
   };
   const buida = () => { ctx.store.remove('pla', d, `treu sopar de ${fmtCurt(d)}`); onClose(); };
   const nq = norm(q.trim());
-  const filtra = (ll) => ll.filter((c) => !nq || norm(c.nom).includes(nq));
+  const us = usos(ctx.store.items('pla'), ymd());
+  const filtra = (ll) => ordena(ll.filter((c) => !nq || norm(c.nom).includes(nq)), us);
   const comp = components(triats, e.text ? [] : f.plats.length === platsIds(e).length ? e.complements : []);
   const falta = ['proteina', 'hidrats', 'verdura'].filter((k) => !comp[k]).map((k) => (k === 'proteina' ? 'proteïna' : k));
   const cmb = combinacions();
@@ -287,7 +291,7 @@ function SoparForm({ d, onClose }) {
       })}
       ${elab.length > 0 && bloc('elaborat', elab.map((c) => html`<button type="button" class=${'pitem' + (on(c.id) ? ' on' : '')} aria-pressed=${on(c.id)} onClick=${() => togPlat(c.id)}>
           <span class="pbox">${on(c.id) && html`<${Icon} n="check" size=${14} />`}</span>
-          <span class="pnom">${c.favorit ? '★ ' : ''}${c.nom}</span>
+          <span class=${'pnom' + prioCls(c)}>${c.nom}</span>
           <${VHP} c=${cobreix(c)} />
         </button>`))}
     </div>
@@ -329,12 +333,13 @@ function Cataleg() {
   const [edit, setEdit] = useState(null);
   const cat = ctx.store.items('cataleg').slice().sort((a, b) => a.nom.localeCompare(b.nom));
   const item = (c, extra) => html`<button class=${'cat-item' + (c.desactivat ? ' off' : '')} onClick=${() => setEdit(c)}>
-    <span>${c.favorit ? '★ ' : ''}${c.nom}</span><span class="cat-meta">${extra}</span></button>`;
+    <span class=${prioCls(c)}>${calaixDe(c) === 'combo' ? '★ ' : ''}${c.nom}</span><span class="cat-meta">${extra}</span></button>`;
   const grup = (k, contingut) => html`<div class="cat-group" style=${{ '--c': CALAIXOS[k].color }}><h3 class="cat-h">${CALAIXOS[k].nom}</h3>${contingut}</div>`;
   const de = (k) => cat.filter((c) => calaixDe(c) === k);
-  const xips = (ll) => html`<div class="pchips cat-xips">${ll.map((c) => html`<button class=${'pchipbtn' + (c.desactivat ? ' off' : '')} style=${{ '--c': c.proteina && PROTEINES[c.proteina] ? PROTEINES[c.proteina].color : CALAIXOS[calaixDe(c)].color }} onClick=${() => setEdit(c)}>${c.favorit ? '★ ' : ''}${c.nom}</button>`)}</div>`;
+  const us = usos(ctx.store.items('pla'), ymd());
+  const xips = (ll) => html`<div class="pchips cat-xips">${ordena(ll, us).map((c) => html`<button class=${'pchipbtn' + prioCls(c) + (c.desactivat ? ' off' : '')} style=${{ '--c': c.proteina && PROTEINES[c.proteina] ? PROTEINES[c.proteina].color : CALAIXOS[calaixDe(c)].color }} onClick=${() => setEdit(c)}>${c.nom}</button>`)}</div>`;
   return html`<div>
-    <div class="sec-head"><p class="hint">Els bàsics de cada calaix (un sol aliment), els elaborats i les vostres combinacions. Un sopar és una peça de cada calaix, o un elaborat i el que hi falti.</p>
+    <div class="sec-head"><p class="hint">Un sopar és una peça de cada calaix, o un elaborat i el que hi falti. En gran, el que feu sovint; en petit, el que feu de tant en tant. Toca un element per canviar-ho.</p>
       <button class="btn primary" onClick=${() => setEdit({ ...NOU })}><${Icon} n="plus" size=${16} /> Afegeix</button></div>
     ${grup('proteina', Object.keys(PROTEINES).map((t) => {
       const g = de('proteina').filter((c) => c.proteina === t);
@@ -342,7 +347,7 @@ function Cataleg() {
     }))}
     ${grup('hidrats', xips(de('hidrats')))}
     ${grup('verdura', xips(de('verdura')))}
-    ${grup('elaborat', de('elaborat').map((c) => item(c, html`<${VHP} c=${cobreix(c)} />${c.proteina && html`<${ProtChip} t=${c.proteina} />`}`)))}
+    ${grup('elaborat', ordena(de('elaborat'), us).map((c) => item(c, html`<${VHP} c=${cobreix(c)} />${c.proteina && html`<${ProtChip} t=${c.proteina} />`}`)))}
     ${de('combo').length > 0 && grup('combo', de('combo').map((c) => item(c)))}
     <p class="hint">Les combinacions favorites es desen des de la fitxa de cada sopar (★ Desa com a favorita).</p>
     ${edit && html`<${PlatForm} plat=${edit} onClose=${() => setEdit(null)} />`}
@@ -350,12 +355,13 @@ function Cataleg() {
 }
 
 function PlatForm({ plat, onClose }) {
-  const [f, set, setF] = useForm({ ...plat, calaix: calaixDe(plat) || 'proteina', ingredientsTxt: (plat.ingredients || []).join(', ') });
+  const [f, set, setF] = useForm({ ...plat, calaix: calaixDe(plat) || 'proteina', prio: prioDe(plat), ingredientsTxt: (plat.ingredients || []).join(', ') });
   const k = f.calaix;
   const save = () => {
     if (!f.nom.trim()) return;
     const { ingredientsTxt, ...rest } = f;
     const item = { ...rest, nom: f.nom.trim(), id: f.id || uid(), ingredients: ingredientsTxt.split(',').map((x) => x.trim()).filter(Boolean) };
+    if (k !== 'combo') item.favorit = false; // la prioritat substitueix el «preferit»
     if (k === 'proteina') Object.assign(item, { proteina: f.proteina || 'carn-blanca', verdura: false, hidrats: false });
     if (k === 'hidrats') Object.assign(item, { proteina: null, verdura: false, hidrats: true });
     if (k === 'verdura') Object.assign(item, { proteina: null, verdura: true, hidrats: false });
@@ -376,9 +382,10 @@ function PlatForm({ plat, onClose }) {
     <${Field} label="Temps de preparació"><select value=${f.temps || 'normal'} onChange=${set('temps')}>${Object.entries(TEMPS).map(([v, x]) => html`<option value=${v}>${x}</option>`)}</select><//>`}
     ${k === 'combo' && html`<p class="hint">Combinació: ${(f.plats || []).map((id) => ctx.store.items('cataleg').find((c) => c.id === id)?.nom).filter(Boolean).join(' + ')}</p>`}
     ${k !== 'combo' && html`<${Field} label="Per a la compra" hint=${k === 'elaborat' ? 'Ingredients separats per comes.' : "Si ho deixes buit, s'hi afegeix el nom tal qual."}><input value=${f.ingredientsTxt} onInput=${set('ingredientsTxt')} /><//>`}
+    ${k !== 'combo' && html`<div class="field"><span class="field-label">Quan el feu?</span><${Seg} small value=${String(f.prio)} onChange=${(v) => setF((x) => ({ ...x, prio: Number(v) }))} options=${[2, 1, 0].map((v) => ({ value: String(v), label: PRIO[v] }))} />
+      <span class="field-hint">Els de «sovint» surten primer i més grans, i el botó Proposa els tria més. L'app també aprèn del que aneu fixant.</span></div>`}
     <div class="checks">
-      <label class="check"><input type="checkbox" checked=${!!f.favorit} onChange=${set('favorit')} /> Preferit (surt més sovint)</label>
-      <label class="check"><input type="checkbox" checked=${!!f.desactivat} onChange=${set('desactivat')} /> No el proposis</label>
+      <label class="check"><input type="checkbox" checked=${!!f.desactivat} onChange=${set('desactivat')} /> No el proposis mai</label>
     </div>
   <//>`;
 }
