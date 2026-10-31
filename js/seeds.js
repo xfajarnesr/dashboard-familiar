@@ -24,7 +24,7 @@ export const CATALEG = [
   P('hummus', 'Hummus amb crudités i pa de pita', true, true, 'llegum', 'ràpid', ['cigrons', 'tahina', 'pastanaga', 'cogombre', 'pa de pita']),
   P('amanida-cigrons', 'Amanida de cigrons', true, false, 'llegum', 'ràpid', ['cigrons', 'tomàquet', 'pebrot', 'ceba']),
   P('quesadilles', 'Quesadilles de pollastre i pebrot', true, true, 'carn-blanca', 'ràpid', ['tortilles de blat', 'pollastre', 'pebrot', 'formatge']),
-  P('wok-tofu', 'Wok de fideus amb tofu i verdures', true, true, 'vegetal', 'ràpid', ['fideus d\'arròs', 'tofu', 'pastanaga', 'carbassó', 'salsa de soja']),
+  P('wok-tofu', 'Wok de fideus amb tofu i verdures', true, true, 'llegum', 'ràpid', ['fideus d\'arròs', 'tofu', 'pastanaga', 'carbassó', 'salsa de soja']),
   P('ous-remenats', 'Ous remenats amb bolets i torrades', true, true, 'ou', 'ràpid', ['ous', 'xampinyons', 'pa']),
   P('arros-tres', 'Arròs tres delícies', true, true, 'ou', 'normal', ['arròs', 'ous', 'pèsols', 'pastanaga', 'pernil dolç']),
   P('pa-tomaquet-pernil', 'Pa amb tomàquet i pernil', false, true, 'carn-vermella', 'ràpid', ['pa', 'tomàquet', 'pernil']),

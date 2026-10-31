@@ -9,21 +9,21 @@ export const PROTEINES = {
   'carn-blanca': { nom: 'Carn blanca', color: '#D9893B' },
   'carn-vermella': { nom: 'Carn vermella', color: '#B8433A' },
   ou: { nom: 'Ou', color: '#D8B12A' },
-  llegum: { nom: 'Llegum', color: '#6E8B3D' },
+  llegum: { nom: 'Llegum i vegetal', color: '#6E8B3D' },
   lactic: { nom: 'Làctic', color: '#8C7BB8' },
-  vegetal: { nom: 'Proteïna vegetal', color: '#4E9A87' },
 };
 
 // Objectiu setmanal aproximat per als nens (5 dinars d'escola + 7 sopars = 12 àpats)
-export const OBJECTIU = { peix: 3, llegum: 3, ou: 2.5, 'carn-blanca': 2, 'carn-vermella': 1, lactic: 0.5, vegetal: 0.5 };
+export const OBJECTIU = { peix: 3, llegum: 3.5, ou: 2.5, 'carn-blanca': 2, 'carn-vermella': 1, lactic: 0.5 };
 
 export const COMPLEMENTS = {
   verdura: ['Amanida verda', 'Verdures al vapor', 'Tomàquet amanit', 'Crudités de pastanaga i cogombre', 'Bròquil bullit'],
   hidrats: ['Pa integral', 'Patata bullida', 'Arròs blanc', 'Torrades'],
-  proteina: { ou: 'Ou dur', lactic: 'Formatge fresc', peix: 'Tonyina', llegum: 'Hummus', 'carn-blanca': 'Pernil de gall dindi', vegetal: 'Tofu a la planxa', 'carn-vermella': 'Pernil' },
+  proteina: { ou: 'Ou dur', lactic: 'Formatge fresc', peix: 'Tonyina', llegum: 'Hummus', 'carn-blanca': 'Pernil de gall dindi', 'carn-vermella': 'Pernil' },
 };
 
-const protTipus = (t) => (t === 'vegetal' ? 'llegum' : t); // a efectes d'equilibri, soja/tofu compten com a llegum
+// Llegum i proteïna vegetal (tofu, soja…) són una sola categoria; dades antigues amb 'vegetal' compten com a llegum
+export const protTipus = (t) => (t === 'vegetal' ? 'llegum' : t);
 
 export function proteinaDinar(menuDia) {
   // menuDia: { icar: {proteina}, helia: {proteina} }

@@ -1,7 +1,7 @@
 import { html, useState } from '../vendor/preact-htm.js';
 import { ctx, Icon, Sheet, Field, Seg, useForm, Empty, nomDe } from '../ui.js';
 import { ymd, parseYmd, addDaysYmd, startOfWeek, fmtCurt, fmtLlarg, DIES, MESOS_CAP, monthKey, uid, norm } from '../util.js';
-import { PROTEINES, OBJECTIU, CALAIXOS, PRIO, prioDe, usos, pesDe, calaixDe, cobreix, proposaSetmana, proteinaSopar, components, equilibriSetmana, platsIds } from '../sopars.js';
+import { PROTEINES, OBJECTIU, CALAIXOS, protTipus, PRIO, prioDe, usos, pesDe, calaixDe, cobreix, proposaSetmana, proteinaSopar, components, equilibriSetmana, platsIds } from '../sopars.js';
 import { categoritza } from './llistes.js';
 import { dinarFora } from './horaris.js';
 
@@ -71,6 +71,7 @@ export function SugEscola({ d, onUse }) {
 }
 
 export function ProtChip({ t }) {
+  t = protTipus(t);
   if (!t || !PROTEINES[t]) return null;
   return html`<span class="pchip" style=${{ '--c': PROTEINES[t].color }}>${PROTEINES[t].nom}</span>`;
 }
@@ -160,7 +161,7 @@ function Setmana() {
       <p class="hint">Mira què dinen els nens a l'escola i equilibra la setmana. Els sopars fixats (amb cadenat) no es toquen.</p>
     </div>
     <div class="equil">
-      ${Object.keys(OBJECTIU).filter((t) => t !== 'vegetal').map((t) => {
+      ${Object.keys(OBJECTIU).map((t) => {
         const v = eq[t] || 0, o = OBJECTIU[t];
         return html`<div class="eq-row" title=${`${PROTEINES[t].nom}: ${v.toFixed(1)} de ${o}`}>
           <span>${PROTEINES[t].nom}</span>
@@ -193,7 +194,7 @@ function Setmana() {
   </div>`;
 }
 
-const protColor = (c) => (c.proteina && PROTEINES[c.proteina] ? PROTEINES[c.proteina].color : CALAIXOS[calaixDe(c)]?.color || '#7d8a97');
+const protColor = (c) => (PROTEINES[protTipus(c.proteina)] ? PROTEINES[protTipus(c.proteina)].color : CALAIXOS[calaixDe(c)]?.color || '#7d8a97');
 const minus = (t, i) => (i ? t.charAt(0).toLowerCase() + t.slice(1) : t);
 const clauCombo = (ids) => [...ids].sort().join('|');
 
@@ -280,7 +281,7 @@ function SoparForm({ d, onClose }) {
         </button>`;
       }))}
       ${prot.length > 0 && bloc('proteina', Object.keys(PROTEINES).map((t) => {
-        const g = prot.filter((c) => c.proteina === t);
+        const g = prot.filter((c) => protTipus(c.proteina) === t);
         if (!g.length) return null;
         return html`<div class="psub" style=${{ '--c': PROTEINES[t].color }}><span class="psub-h">${PROTEINES[t].nom}</span>
           <div class="pchips">${g.map((c) => html`<${Chip} c=${c} on=${on(c.id)} onClick=${() => togPlat(c.id)} />`)}</div></div>`;
@@ -337,12 +338,12 @@ function Cataleg() {
   const grup = (k, contingut) => html`<div class="cat-group" style=${{ '--c': CALAIXOS[k].color }}><h3 class="cat-h">${CALAIXOS[k].nom}</h3>${contingut}</div>`;
   const de = (k) => cat.filter((c) => calaixDe(c) === k);
   const us = usos(ctx.store.items('pla'), ymd());
-  const xips = (ll) => html`<div class="pchips cat-xips">${ordena(ll, us).map((c) => html`<button class=${'pchipbtn' + prioCls(c) + (c.desactivat ? ' off' : '')} style=${{ '--c': c.proteina && PROTEINES[c.proteina] ? PROTEINES[c.proteina].color : CALAIXOS[calaixDe(c)].color }} onClick=${() => setEdit(c)}>${c.nom}</button>`)}</div>`;
+  const xips = (ll) => html`<div class="pchips cat-xips">${ordena(ll, us).map((c) => html`<button class=${'pchipbtn' + prioCls(c) + (c.desactivat ? ' off' : '')} style=${{ '--c': protColor(c) }} onClick=${() => setEdit(c)}>${c.nom}</button>`)}</div>`;
   return html`<div>
     <div class="sec-head"><p class="hint">Un sopar és una peça de cada calaix, o un elaborat i el que hi falti. En gran, el que feu sovint; en petit, el que feu de tant en tant. Toca un element per canviar-ho.</p>
       <button class="btn primary" onClick=${() => setEdit({ ...NOU })}><${Icon} n="plus" size=${16} /> Afegeix</button></div>
     ${grup('proteina', Object.keys(PROTEINES).map((t) => {
-      const g = de('proteina').filter((c) => c.proteina === t);
+      const g = de('proteina').filter((c) => protTipus(c.proteina) === t);
       return g.length ? html`<h4 class="cat-sub" style=${{ color: PROTEINES[t].color }}>${PROTEINES[t].nom}</h4>${xips(g)}` : null;
     }))}
     ${grup('hidrats', xips(de('hidrats')))}
